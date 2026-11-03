@@ -230,8 +230,7 @@ unsigned desk_edit_key(struct desk_edit *e,const struct srv_key_event *key) {
 void desk_edit_draw(struct desk_canvas *c,const struct desk_edit *e,const struct desk_theme *theme) {
     struct desk_edit shown=*e;update_scrollbars(&shown);e=&shown;
     struct desk_rect clip=c->clip,inner=desk_edit_viewport(e);
-    desk_fill(c,e->frame,e->focused?theme->accent:theme->border);
-    desk_fill(c,desk_widget_inset(e->frame,1),desk_theme_field(theme));
+    desk_theme_field_draw(c,e->frame,theme,e->focused);
     if(e->show_vertical) desk_scrollbar_draw(c,&e->vertical,theme);
     if(e->show_horizontal) desk_scrollbar_draw(c,&e->horizontal,theme);
     if(!inner.w || !inner.h) return;

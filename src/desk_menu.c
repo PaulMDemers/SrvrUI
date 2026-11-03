@@ -216,7 +216,7 @@ struct desk_menu_result desk_menu_key(struct desk_menu *m,const struct srv_key_e
 void desk_menu_bar_draw(struct desk_canvas *c,const struct desk_menu *m,const struct desk_theme *t) {
     for(unsigned g=0;g<m->groups;g++) {
         struct desk_rect h=desk_menu_heading(m,g);
-        if((int)g==m->open) desk_fill(c,h,t->selected);
+        if((int)g==m->open) desk_theme_selection(c,h,t);
         desk_label_draw(c,(struct desk_rect){h.x+14,h.y+(h.h-20)/2,h.w>28?h.w-28:0,20},m->font,m->items[m->headings[g]].label,t->text);
     }
 }
@@ -232,7 +232,7 @@ void desk_menu_popup_draw(struct desk_canvas *c,const struct desk_menu *m,const 
         struct desk_rect row=row_content(m,i,p);const struct desk_menu_item *item=&m->items[i];
         if(!desk_intersect(row,c->clip).h)continue;
         if(item->flags&DESK_MENU_SEPARATOR) { desk_fill(c,(struct desk_rect){row.x+12,row.y+4,row.w>24?row.w-24:0,1},t->border);continue; }
-        if((int)i==m->selected) desk_fill(c,row,t->selected);
+        if((int)i==m->selected) desk_theme_selection(c,row,t);
         uint32_t color=item->flags&DESK_MENU_DISABLED?t->muted:t->text;
         int sw=desk_text_width(m->font,item->shortcut);
         desk_label_draw(c,(struct desk_rect){row.x+24,row.y+5,row.w>sw+48?row.w-sw-48:0,20},m->font,item->label,color);

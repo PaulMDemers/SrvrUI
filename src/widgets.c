@@ -25,8 +25,8 @@ static uint32_t mix(uint32_t a,uint32_t b,unsigned n,unsigned d) {
     }
     return result;
 }
-int desk_theme_configure(struct desk_theme *out,unsigned accent,unsigned glass,unsigned size) {
-    if(!out || accent>2 || glass>2 || (size!=16 && size!=20)) return -1;
+int desk_theme_configure_style(struct desk_theme *out,unsigned style,unsigned accent,unsigned glass,unsigned size) {
+    if(!out || style>DESK_THEME_AQUA || accent>2 || glass>2 || (size!=16 && size!=20)) return -1;
     static const uint32_t accents[]={0x2674b8,0x525d6c,0x16776e};
     static const uint32_t selections[]={0xc9e1f6,0xd8dde5,0xc6e7df};
     static const uint32_t tops[]={0xe6f2fb,0xe9edf2,0xe5f5ef};
@@ -38,7 +38,26 @@ int desk_theme_configure(struct desk_theme *out,unsigned accent,unsigned glass,u
     next.chrome_top=tops[accent];next.chrome_bottom=bottoms[accent];
     next.chrome_border=borders[accent];next.glass_tint=accents[accent];
     next.glass_alpha=alphas[glass];next.body=size==20?&desk_font_20:&desk_font_16;
+    next.style=(enum desk_theme_style)style;
+    if(style==DESK_THEME_AERO) {
+        next.surface=0xeaf2f8;next.text=0x182e40;next.muted=0x526a7c;
+        next.track=0xd6e5f0;next.thumb=0x8aacc3;next.border=0x668aa3;
+        next.field=0xffffff;next.shadow=0x829db1;next.corner_radius=5;
+        next.selected=mix(next.selected,next.accent,1,6);
+        next.chrome_top=mix(next.chrome_top,0xffffff,1,3);
+        next.chrome_bottom=mix(next.chrome_bottom,0x75aed4,1,3);
+    } else if(style==DESK_THEME_AQUA) {
+        next.surface=0xe8e8e8;next.text=0x242424;next.muted=0x666666;
+        next.track=0xdadada;next.thumb=0xa4a4a4;next.border=0x929292;
+        next.field=0xffffff;next.shadow=0xaaaaaa;next.corner_radius=6;
+        next.chrome_top=0xf4f4f4;next.chrome_bottom=0xc7c7c7;
+        next.chrome_border=0x858585;
+        if(accent==0) { next.accent=0x1874ce;next.selected=0xc2ddf6; }
+    }
     *out=next;return 0;
+}
+int desk_theme_configure(struct desk_theme *out,unsigned accent,unsigned glass,unsigned size) {
+    return desk_theme_configure_style(out,DESK_THEME_SILVER,accent,glass,size);
 }
 /* Rounded spans depend on the original frame, never on the damage clip.
  * Blend only the destination pixel: partial redraws need no neighboring samples. */
@@ -78,14 +97,34 @@ void desk_theme_gradient(struct desk_canvas *c,struct desk_rect r,uint32_t top,u
         desk_fill(c,(struct desk_rect){visible.x,(int32_t)y,visible.w,1},mix(top,bottom,n,d));
     }
 }
+void desk_theme_selection(struct desk_canvas *c,struct desk_rect r,const struct desk_theme *t) {
+    if(t->style==DESK_THEME_SILVER) { desk_fill(c,r,t->selected);return; }
+    if(!valid(r)) return;
+    uint32_t top=mix(t->selected,0xffffff,t->style==DESK_THEME_AERO?2:1,5);
+    uint32_t bottom=mix(t->selected,t->accent,t->style==DESK_THEME_AERO?1:2,8);
+    desk_theme_gradient(c,r,top,bottom);
+    if(r.h>2) desk_fill(c,(struct desk_rect){r.x,r.y,r.w,1},mix(t->selected,t->accent,1,3));
+}
+void desk_theme_field_draw(struct desk_canvas *c,struct desk_rect r,const struct desk_theme *t,int focused) {
+    if(!valid(r)) return;
+    desk_fill(c,r,focused?t->accent:t->border);
+    struct desk_rect inner=desk_widget_inset(r,1);
+    desk_fill(c,inner,desk_theme_field(t));
+    if(t->style!=DESK_THEME_SILVER && inner.w>0 && inner.h>1)
+        desk_fill(c,(struct desk_rect){inner.x,inner.y,inner.w,1},mix(desk_theme_field(t),t->border,1,5));
+}
 void desk_theme_panel(struct desk_canvas *c,struct desk_rect r,const struct desk_theme *t,int pressed,int focused) {
     if(!valid(r)) return;
     uint32_t border=focused?t->accent:t->border;
     desk_theme_glass(c,r,border,border,255,t->corner_radius);
     struct desk_rect inner=desk_widget_inset(r,1);
     uint32_t light=mix(t->surface,0xffffff,1,8),dark=mix(t->surface,t->border,1,4);
+    if(t->style==DESK_THEME_AERO) { light=mix(t->surface,0xffffff,3,4);dark=mix(t->surface,t->thumb,1,3); }
+    else if(t->style==DESK_THEME_AQUA) { light=mix(t->surface,0xffffff,3,4);dark=mix(t->surface,t->border,1,5); }
     if(pressed) { light=mix(t->selected,t->border,1,4);dark=t->selected; }
     desk_theme_glass(c,inner,light,dark,255,t->corner_radius?t->corner_radius-1:0);
+    if(t->style==DESK_THEME_AERO && !pressed && inner.w>2 && inner.h>6)
+        desk_fill(c,(struct desk_rect){inner.x+1,inner.y+inner.h/2,inner.w-2,1},mix(t->surface,t->thumb,1,5));
     if(inner.w>2 && inner.h>2 && !pressed)
         desk_fill(c,(struct desk_rect){inner.x+1,inner.y+1,inner.w-2,1},mix(t->surface,0xffffff,1,4));
 }
@@ -212,7 +251,9 @@ unsigned desk_scrollbar_event(struct desk_scrollbar *b, struct desk_widget_event
 void desk_scrollbar_draw(struct desk_canvas *c, const struct desk_scrollbar *b,
                         const struct desk_theme *theme) {
     desk_fill(c,b->track,theme->track);
-    desk_theme_panel(c,desk_scrollbar_geometry(b).thumb,theme,b->dragging,0);
+    struct desk_theme thumb=*theme;
+    if(theme->style!=DESK_THEME_SILVER) { thumb.surface=theme->thumb;thumb.border=mix(theme->thumb,theme->border,1,2); }
+    desk_theme_panel(c,desk_scrollbar_geometry(b).thumb,&thumb,b->dragging,0);
 }
 
 void desk_button_configure(struct desk_button *b, struct desk_rect r, int enabled) {

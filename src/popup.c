@@ -121,7 +121,7 @@ void desk_popup_draw(struct desk_canvas *c,const struct desk_popup *p,const stru
     for(unsigned i=0;i<p->count;i++) {
         struct desk_rect row={content.x,r.y+4+row_top(p,i)-p->scroll.offset,content.w,row_height(p,i)};const struct desk_menu_item *item=p->items+i;
         if(item->flags&DESK_MENU_SEPARATOR) { desk_fill(c,(struct desk_rect){row.x+12,row.y+4,row.w>24?row.w-24:0,1},t->border);continue; }
-        if((int)i==p->selected) desk_fill(c,row,t->selected);
+        if((int)i==p->selected) desk_theme_selection(c,row,t);
         uint32_t color=item->flags&DESK_MENU_DISABLED?t->muted:t->text;int sw=desk_text_width(p->font,item->shortcut),available=row.w>48?row.w-48:0;
         int shortcut_limit=available>48?available-48:0;if(sw>shortcut_limit) sw=shortcut_limit;
         desk_label_ellipsis(c,(struct desk_rect){row.x+24,row.y+5,available-sw,p->font->line_height},p->font,item->label,color);

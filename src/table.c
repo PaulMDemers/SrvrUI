@@ -121,7 +121,7 @@ void desk_table_draw(struct desk_canvas *c,const struct desk_table *t,const stru
     if(!t->body.count) desk_label_draw(c,desk_widget_inset(body,12),theme->body,"No items",theme->muted);
     for(int i=t->body.scroll.offset/ROW;i<t->body.count;i++) {
         int y=body.y+i*ROW-t->body.scroll.offset;if(y>=body.y+body.h) break;
-        if(i==t->body.selected) desk_fill(c,(struct desk_rect){body.x,y,body.w,ROW},theme->selected);
+        if(i==t->body.selected) desk_theme_selection(c,(struct desk_rect){body.x,y,body.w,ROW},theme);
         for(int j=0;j<t->column_count;j++) {
             struct desk_rect r=column(t,j);r.y=y+4;r.h=ROW-4;r.x+=8;r.w-=16;
             cell(c,r,theme->body,t->rows[i].cells[j],t->body.enabled?theme->text:theme->muted,t->columns[j].right);
