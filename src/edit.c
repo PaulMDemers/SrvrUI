@@ -231,7 +231,7 @@ void desk_edit_draw(struct desk_canvas *c,const struct desk_edit *e,const struct
     struct desk_edit shown=*e;update_scrollbars(&shown);e=&shown;
     struct desk_rect clip=c->clip,inner=desk_edit_viewport(e);
     desk_fill(c,e->frame,e->focused?theme->accent:theme->border);
-    desk_fill(c,desk_widget_inset(e->frame,1),theme->surface);
+    desk_fill(c,desk_widget_inset(e->frame,1),desk_theme_field(theme));
     if(e->show_vertical) desk_scrollbar_draw(c,&e->vertical,theme);
     if(e->show_horizontal) desk_scrollbar_draw(c,&e->horizontal,theme);
     if(!inner.w || !inner.h) return;

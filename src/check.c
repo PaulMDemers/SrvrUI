@@ -31,13 +31,13 @@ void desk_check_draw(struct desk_canvas *c,const struct desk_check *check,const 
         desk_fill(c,(struct desk_rect){r.x,r.y,1,r.h},t->accent);
         desk_fill(c,(struct desk_rect){r.x+r.w-1,r.y,1,r.h},t->accent);
     }
-    uint32_t fill=b->armed && b->inside?t->selected:t->surface;
+    uint32_t fill=b->armed && b->inside?t->selected:(b->enabled?desk_theme_field(t):t->track);
     if(check->radio) {
         circle(c,x+8,y+8,8,edge);circle(c,x+8,y+8,6,fill);
         if(check->checked) circle(c,x+8,y+8,4,b->enabled?t->accent:t->muted);
     } else {
-        desk_fill(c,(struct desk_rect){x,y,17,17},edge);
-        desk_fill(c,(struct desk_rect){x+1,y+1,15,15},fill);
+        desk_theme_panel(c,(struct desk_rect){x,y,17,17},t,b->armed && b->inside,b->focused);
+        desk_fill(c,(struct desk_rect){x+2,y+2,13,13},fill);
         if(check->checked) {
             uint32_t color=b->enabled?t->accent:t->muted;
             desk_checkmark_draw(c,x+3,y+5,color);

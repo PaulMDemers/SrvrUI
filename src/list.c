@@ -126,7 +126,7 @@ unsigned desk_list_key(struct desk_list *l,const struct srv_key_event *key) {
 void desk_list_draw(struct desk_canvas *c,const struct desk_list *l,const struct desk_theme *theme) {
     desk_fill(c,l->frame,l->focused?theme->accent:theme->border);
     struct desk_rect inner=desk_widget_inset(l->frame,1),clip=c->clip;
-    desk_fill(c,inner,theme->surface);
+    desk_fill(c,inner,desk_theme_field(theme));
     if(inner.w<=18 || !inner.h) return;
     struct desk_rect rows=inner;rows.w-=18;
     desk_clip(c,desk_intersect(clip,rows));

@@ -64,8 +64,8 @@ struct desk_action desk_dialog_pointer(struct desk_dialog *d,struct desk_widget_
 }
 void desk_dialog_draw(struct desk_canvas *c,const struct desk_dialog *d,const struct desk_theme *t) {
     struct desk_rect r=d->frame;if(r.w<=0 || r.h<=0) return;
-    desk_fill(c,(struct desk_rect){r.x+4,r.y+5,r.w,r.h},0xb9c2b4);desk_fill(c,r,t->border);
-    desk_fill(c,desk_widget_inset(r,1),t->surface);
+    desk_fill(c,(struct desk_rect){r.x+4,r.y+5,r.w,r.h},desk_theme_shadow(t));desk_theme_panel(c,r,t,0,0);
+    desk_fill(c,desk_widget_inset(r,2),t->surface);
     desk_label_draw(c,(struct desk_rect){r.x+16,r.y+16,r.w>32?r.w-32:0,30},t->heading,d->title,t->text);
     desk_text_block_draw(c,(struct desk_rect){r.x+16,r.y+56,r.w>32?r.w-32:0,r.h>120?r.h-120:0},t->body,d->message,t->muted);
     desk_ui_draw(c,&d->ui,t);

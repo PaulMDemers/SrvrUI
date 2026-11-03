@@ -89,8 +89,9 @@ void desk_tabs_draw(struct desk_canvas *c,const struct desk_tabs *t,const struct
     desk_fill(c,t->frame,theme->track);
     for(unsigned i=0;i<t->count;i++) {
         struct desk_rect r=desk_tabs_item_rect(t,i);int selected=(int)i==t->selected;
-        uint32_t fill=selected || ((int)i==t->pressed && t->inside)?theme->selected:theme->surface;
-        desk_fill(c,desk_widget_inset(r,1),fill);
+        int pressed=(int)i==t->pressed && t->inside;
+        desk_theme_panel(c,r,theme,pressed,t->focused && selected);
+        if(selected && !pressed) desk_fill(c,desk_widget_inset(r,2),theme->surface);
         int active=t->enabled && !t->items[i].disabled;
         if(selected) desk_fill(c,(struct desk_rect){r.x+1,r.y+r.h-3,r.w>2?r.w-2:0,2},active?theme->accent:theme->muted);
         if(t->focused && selected) {

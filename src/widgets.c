@@ -2,16 +2,45 @@
 #include <limits.h>
 #include <string.h>
 
-const struct desk_theme desk_theme_quiet = {
-    .surface=0xfaf9f6, .text=0x292e2b, .muted=0x646b65, .accent=0x38644f,
-    .selected=0xe0eade, .track=0xe7ebe2, .thumb=0x748b79, .border=0x748b79,
-    .body=&desk_font_16, .heading=&desk_font_20,
-    .spacing=4, .padding=8, .control_height=28
-};
+#define SILVER_THEME { \
+    .surface=0xf0f1f3, .text=0x252a30, .muted=0x596572, .accent=0x2674b8, \
+    .selected=0xc9e1f6, .track=0xe2e5e9, .thumb=0xaab5c0, .border=0x8d99a5, \
+    .body=&desk_font_16, .heading=&desk_font_20, \
+    .spacing=4, .padding=8, .control_height=28, .field=0xffffff, .shadow=0xb5bcc4 \
+}
+const struct desk_theme desk_theme_silver = SILVER_THEME;
+const struct desk_theme desk_theme_quiet = SILVER_THEME;
 
 static int valid(struct desk_rect r) {
     return r.w>0 && r.h>0 && (int64_t)r.x+r.w<=INT32_MAX &&
         (int64_t)r.y+r.h<=INT32_MAX;
+}
+static uint32_t mix(uint32_t a,uint32_t b,unsigned n,unsigned d) {
+    uint32_t result=0;
+    for(int shift=0;shift<=16;shift+=8) {
+        unsigned av=(a>>shift)&255,bv=(b>>shift)&255;
+        result|=((uint32_t)(((uint64_t)av*(d-n)+(uint64_t)bv*n)/d))<<shift;
+    }
+    return result;
+}
+void desk_theme_gradient(struct desk_canvas *c,struct desk_rect r,uint32_t top,uint32_t bottom) {
+    if(!valid(r)) return;
+    struct desk_rect visible=desk_intersect(desk_intersect(r,c->clip),
+                                            (struct desk_rect){0,0,c->width,c->height});
+    for(int64_t y=visible.y;y<(int64_t)visible.y+visible.h;y++) {
+        unsigned n=(unsigned)(y-r.y),d=r.h>1?(unsigned)(r.h-1):1;
+        desk_fill(c,(struct desk_rect){visible.x,(int32_t)y,visible.w,1},mix(top,bottom,n,d));
+    }
+}
+void desk_theme_panel(struct desk_canvas *c,struct desk_rect r,const struct desk_theme *t,int pressed,int focused) {
+    if(!valid(r)) return;
+    desk_fill(c,r,focused?t->accent:t->border);
+    struct desk_rect inner=desk_widget_inset(r,1);
+    uint32_t light=mix(t->surface,0xffffff,1,8),dark=mix(t->surface,t->border,1,4);
+    if(pressed) { light=mix(t->selected,t->border,1,4);dark=t->selected; }
+    desk_theme_gradient(c,inner,light,dark);
+    if(inner.w>2 && inner.h>2 && !pressed)
+        desk_fill(c,(struct desk_rect){inner.x+1,inner.y+1,inner.w-2,1},mix(t->surface,0xffffff,1,4));
 }
 static int same(struct desk_rect a, struct desk_rect b) {
     return a.x==b.x && a.y==b.y && a.w==b.w && a.h==b.h;
@@ -136,7 +165,7 @@ unsigned desk_scrollbar_event(struct desk_scrollbar *b, struct desk_widget_event
 void desk_scrollbar_draw(struct desk_canvas *c, const struct desk_scrollbar *b,
                         const struct desk_theme *theme) {
     desk_fill(c,b->track,theme->track);
-    desk_fill(c,desk_scrollbar_geometry(b).thumb,theme->thumb);
+    desk_theme_panel(c,desk_scrollbar_geometry(b).thumb,theme,b->dragging,0);
 }
 
 void desk_button_configure(struct desk_button *b, struct desk_rect r, int enabled) {
@@ -173,9 +202,9 @@ unsigned desk_button_event(struct desk_button *b, struct desk_widget_event e) {
 void desk_button_draw(struct desk_canvas *c, const struct desk_button *b,
                       const char *label, const struct desk_theme *theme) {
     if (!valid(b->frame)) return;
-    desk_fill(c,b->frame,b->focused?theme->accent:theme->border);
-    desk_fill(c,desk_widget_inset(b->frame,b->focused?2:1),
-              b->enabled && b->armed && b->inside?theme->selected:theme->surface);
+    struct desk_theme disabled=*theme;
+    if(!b->enabled) { disabled.surface=theme->track;disabled.border=theme->thumb; }
+    desk_theme_panel(c,b->frame,b->enabled?theme:&disabled,b->enabled && b->armed && b->inside,b->enabled && b->focused);
     struct desk_rect text=desk_widget_inset(b->frame,4);
     if (text.h>theme->body->line_height) text.y+=(text.h-theme->body->line_height)/2;
     if(b->centered && text.w>0) {

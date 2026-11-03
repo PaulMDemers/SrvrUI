@@ -62,7 +62,7 @@ struct desk_action desk_color_panel_key(struct desk_color_panel *p,const struct 
 struct desk_action desk_color_panel_pointer(struct desk_color_panel *p,struct desk_widget_event e,uint64_t time_us) { return action(p,desk_ui_pointer(&p->ui,e,time_us)); }
 void desk_color_panel_draw(struct desk_canvas *c,const struct desk_color_panel *p,const struct desk_theme *t) {
     struct desk_rect r=p->frame,old=c->clip;if(!r.w || !r.h) return;
-    desk_fill(c,(struct desk_rect){r.x+4,r.y+5,r.w,r.h},0xb9c2b4);desk_clip(c,desk_intersect(old,r));
+    desk_fill(c,(struct desk_rect){r.x+4,r.y+5,r.w,r.h},desk_theme_shadow(t));desk_clip(c,desk_intersect(old,r));
     desk_fill(c,r,t->border);desk_fill(c,desk_widget_inset(r,1),t->surface);
     desk_label_ellipsis(c,(struct desk_rect){r.x+12,r.y+12,r.w>152?r.w-152:0,24},t->body,"Color",t->text);
     desk_label_draw(c,(struct desk_rect){r.x+r.w-140,r.y+12,82,24},&desk_font_16,p->hex,t->text);

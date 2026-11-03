@@ -107,7 +107,7 @@ struct desk_palette_result desk_palette_pointer(struct desk_palette *p,struct de
 struct desk_palette_result desk_palette_scroll(struct desk_palette *p,int x,int y,int delta) { return result(p,desk_ui_scroll(&p->ui,x,y,0,delta)); }
 void desk_palette_draw(struct desk_canvas *c,const struct desk_palette *p,const struct desk_theme *theme) {
     struct desk_rect r=p->frame;if(r.w<=0 || r.h<=0) return;
-    desk_fill(c,(struct desk_rect){r.x+4,r.y+5,r.w,r.h},0xb9c2b4);desk_fill(c,r,theme->border);desk_fill(c,desk_widget_inset(r,1),theme->surface);
+    desk_fill(c,(struct desk_rect){r.x+4,r.y+5,r.w,r.h},desk_theme_shadow(theme));desk_theme_panel(c,r,theme,0,0);desk_fill(c,desk_widget_inset(r,2),theme->surface);
     struct desk_rect clip=c->clip;desk_clip(c,desk_intersect(clip,r));
     desk_label_draw(c,(struct desk_rect){r.x+16,r.y+16,r.w>32?r.w-32:0,28},theme->heading,p->title,theme->text);
     desk_ui_draw(c,&p->ui,theme);

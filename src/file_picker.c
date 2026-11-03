@@ -133,8 +133,8 @@ struct desk_picker_result desk_picker_scroll(struct desk_file_picker *p,int x,in
 }
 void desk_picker_draw(struct desk_canvas *c,const struct desk_file_picker *p,const struct desk_theme *t) {
     struct desk_rect r=p->frame,clip=c->clip;
-    desk_fill(c,(struct desk_rect){r.x+3,r.y+4,r.w,r.h},0xb9c2b4);desk_fill(c,r,t->border);
-    desk_fill(c,desk_widget_inset(r,1),t->surface);desk_clip(c,desk_intersect(clip,r));
+    desk_fill(c,(struct desk_rect){r.x+3,r.y+4,r.w,r.h},desk_theme_shadow(t));desk_theme_panel(c,r,t,0,0);
+    desk_fill(c,desk_widget_inset(r,2),t->surface);desk_clip(c,desk_intersect(clip,r));
     desk_label_draw(c,(struct desk_rect){r.x+16,r.y+10,r.w>200?r.w-200:0,28},t->heading,p->mode==DESK_PICKER_SAVE?(r.w<400?"Save":"Save document"):(r.w<400?"Open":"Open document"),t->text);
     desk_ui_draw(c,&p->ui,t);
     desk_label_draw(c,(struct desk_rect){r.x+16,r.y+r.h-100,r.w>32?r.w-32:0,22},t->body,p->status,t->muted);

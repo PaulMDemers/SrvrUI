@@ -223,8 +223,8 @@ void desk_menu_bar_draw(struct desk_canvas *c,const struct desk_menu *m,const st
 void desk_menu_popup_draw(struct desk_canvas *c,const struct desk_menu *m,const struct desk_theme *t) {
     if(m->open<0) return;
     struct desk_rect p=desk_menu_popup(m),clip=c->clip;
-    desk_fill(c,(struct desk_rect){p.x+3,p.y+4,p.w,p.h},0xb9c2b4);
-    desk_fill(c,p,t->border);desk_fill(c,desk_widget_inset(p,1),t->surface);
+    desk_fill(c,(struct desk_rect){p.x+3,p.y+4,p.w,p.h},desk_theme_shadow(t));
+    desk_theme_panel(c,p,t,0,0);desk_fill(c,desk_widget_inset(p,1),t->surface);
     desk_clip(c,desk_intersect(clip,p));
     for(unsigned i=m->headings[m->open]+1;i<end(m);i++) {
         /* Keep text/checkmarks at the original content position. Clipping the

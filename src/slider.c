@@ -77,8 +77,7 @@ void desk_slider_draw(struct desk_canvas *c,const struct desk_slider *s,const st
     int x=r.x+9,y=r.y+r.h/2;
     desk_fill(c,(struct desk_rect){x,y-2,r.w-18,4},t->track);
     desk_fill(c,(struct desk_rect){x,y-2,thumb.x+7-x,4},s->enabled?t->accent:t->muted);
-    desk_fill(c,thumb,s->focused?t->accent:t->border);
-    desk_fill(c,desk_widget_inset(thumb,2),s->dragging?t->selected:t->surface);
+    desk_theme_panel(c,thumb,t,s->dragging,s->focused);
     if(s->focused) {
         desk_fill(c,(struct desk_rect){r.x,r.y,r.w,1},t->accent);desk_fill(c,(struct desk_rect){r.x,r.y+r.h-1,r.w,1},t->accent);
         desk_fill(c,(struct desk_rect){r.x,r.y,1,r.h},t->accent);desk_fill(c,(struct desk_rect){r.x+r.w-1,r.y,1,r.h},t->accent);

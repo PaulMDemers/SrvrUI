@@ -1,4 +1,4 @@
-# Native desktop widget library
+# SrvrUI — native desktop widget library
 
 The new desktop's shared controls live here. Files, Text and subsequent native
 apps should use and extend this library rather than maintain private controls.
@@ -7,7 +7,7 @@ controls and models; the build produces
 `build/userspace/widgets/libdeskwidgets.a`. It is independent of the legacy
 `ui.h` / `gui2.h` implementations.
 
-The optional [file chooser controller](../../docs/desktop-chooser.md) belongs to
+The optional [file chooser controller](https://github.com/PaulMDemers/SrvrOS/blob/main/docs/desktop-chooser.md) belongs to
 `userspace/desktop_runtime`, above this library. Text and Preview share its
 asynchronous browse/cancel ownership while the picker widget remains pure.
 
@@ -34,21 +34,21 @@ asynchronous browse/cancel ownership while the picker widget remains pure.
 
 The sections below document ownership and limits for these APIs. Their headers
 are the authoritative declarations. For desktop workflows and keyboard shortcuts,
-see the [native desktop guide](../../docs/native-desktop.md).
+see the [native desktop guide](https://github.com/PaulMDemers/SrvrOS/blob/main/docs/native-desktop.md).
 
 ## Adding a native application
 
 For multiple windows, use the optional [window/model ownership
-layer](../../docs/desktop-window-ownership.md) in `userspace/desktop_runtime`.
+layer](https://github.com/PaulMDemers/SrvrOS/blob/main/docs/desktop-window-ownership.md) in `userspace/desktop_runtime`.
 Normal Text and Files share its stable allocations, owned-dialog routing,
 sequential Quit and explicit accepted-work retirement. It adds no fixed window
 count and keeps allocation/transport outside the pure widgets. Read the
 [application lifecycle
-contract](../../docs/desktop-application-lifecycle.md). Current protocol v15
+contract](https://github.com/PaulMDemers/SrvrOS/blob/main/docs/desktop-application-lifecycle.md). Current protocol v15
 supports shared connection ownership, parented dialogs and cooperative app Quit;
 `desk_app` remains the per-window interface. The single-window sequence below
 is not a reason to create a new process or transport for each document. Read the
-[desktop API evolution](../../docs/desktop-api-evolution.md) for allocation budgets
+[desktop API evolution](https://github.com/PaulMDemers/SrvrOS/blob/main/docs/desktop-api-evolution.md) for allocation budgets
 and the distinction between window growth and process/descriptor limits.
 
 Keep one application-owned state object containing its `desk_app` transport,
@@ -126,8 +126,8 @@ tree or dynamic object graph is introduced yet.
 
 ## Base controls
 
-- Immutable `desk_theme_quiet` with shared warm surfaces, restrained color,
-  fonts and spacing. Pass an application-owned copy for a different theme.
+- Immutable `desk_theme_silver` and compatible `desk_theme_quiet` with cool silver surfaces, blue focus and selection,
+  fonts and spacing. Pass an application-owned copy for a different theme. The appended `field` and `shadow` colors fall back to `surface` and `border` when zero, preserving older custom initializers.
 - Clipped labels and rectangle containment/inset helpers. A shared 11×8 native
   checkmark draws menu and checkbox state without depending on font coverage.
 - Vertical scrollbar with independent content/viewport extents, bounded wheel
@@ -762,5 +762,18 @@ small users retain inline defaults. Do not move initialized palette/menu objects
 internal pointers and UI-control references require a stable owner address.
 
 Application event dispatch, waits, timers and command snapshots live in the
-[shared desktop runtime](../../docs/desktop-application-runtime.md), above this
+[shared desktop runtime](https://github.com/PaulMDemers/SrvrOS/blob/main/docs/desktop-application-runtime.md), above this
 pure widget archive. Controls retain their model/input/rendering responsibilities.
+
+## Repository integration
+
+SrvrUI mounts at `userspace/widgets/` in SrvrOS. It supplies client-side pure
+controls and models; the renderer, fonts, desktop runtime, IPC and OS services
+remain in SrvrOS. Build/test from a recursive SrvrOS checkout with
+`sh tools/macos/build.sh test-widgets widget-theme-preview` on Apple Silicon,
+or `make test-widgets widget-theme-preview` on a supported host. The preview
+writes actual toolkit pixels to `build/review/theme/silver.ppm`.
+
+History was extracted from SrvrOS `74d38d59`. Publish a SrvrUI commit before
+updating the OS gitlink. No standalone OS-independent SDK is claimed; changes
+to rendering or runtime interfaces require matched integration revisions.

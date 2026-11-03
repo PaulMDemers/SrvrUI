@@ -116,7 +116,7 @@ struct desk_menu_result desk_popup_key(struct desk_popup *p,const struct srv_key
 }
 void desk_popup_draw(struct desk_canvas *c,const struct desk_popup *p,const struct desk_theme *t) {
     if(!p->opened) return;
-    struct desk_rect old=c->clip,r=p->frame;desk_fill(c,(struct desk_rect){r.x+3,r.y+4,r.w,r.h},0xb9c2b4);desk_fill(c,r,t->border);desk_fill(c,desk_widget_inset(r,1),t->surface);
+    struct desk_rect old=c->clip,r=p->frame;desk_fill(c,(struct desk_rect){r.x+3,r.y+4,r.w,r.h},desk_theme_shadow(t));desk_theme_panel(c,r,t,0,0);desk_fill(c,desk_widget_inset(r,2),t->surface);
     struct desk_rect content={r.x+4,r.y+4,r.w-8-(desk_scrollbar_limit(&p->scroll)?14:0),r.h-8};desk_clip(c,desk_intersect(old,content));
     for(unsigned i=0;i<p->count;i++) {
         struct desk_rect row={content.x,r.y+4+row_top(p,i)-p->scroll.offset,content.w,row_height(p,i)};const struct desk_menu_item *item=p->items+i;

@@ -103,8 +103,8 @@ static void cell(struct desk_canvas *c,struct desk_rect r,const struct desk_font
 }
 void desk_table_draw(struct desk_canvas *c,const struct desk_table *t,const struct desk_theme *theme) {
     struct desk_rect clip=c->clip,inner=desk_widget_inset(t->frame,1);
-    desk_fill(c,t->frame,t->body.focused?theme->accent:theme->border);desk_fill(c,inner,theme->surface);
-    struct desk_rect h=inner;if(h.h>HEADER) h.h=HEADER;desk_fill(c,h,theme->selected);
+    desk_fill(c,t->frame,t->body.focused?theme->accent:theme->border);desk_fill(c,inner,desk_theme_field(theme));
+    struct desk_rect h=inner;if(h.h>HEADER) h.h=HEADER;desk_theme_gradient(c,h,theme->surface,theme->track);
     for(int i=0;i<t->column_count;i++) {
         struct desk_rect r=column(t,i);if(r.w<=0) continue;
         if(t->header_focus && t->body.focused && t->header_column==i) desk_fill(c,r,theme->border);

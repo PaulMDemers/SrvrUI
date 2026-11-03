@@ -12,8 +12,15 @@ struct desk_theme {
     uint32_t surface, text, muted, accent, selected, track, thumb, border;
     const struct desk_font *body, *heading;
     int32_t spacing, padding, control_height;
+    /* Zero retains legacy surface/border behavior for older initializers. */
+    uint32_t field, shadow;
 };
-extern const struct desk_theme desk_theme_quiet;
+extern const struct desk_theme desk_theme_silver, desk_theme_quiet;
+static inline uint32_t desk_theme_field(const struct desk_theme *t) { return t->field?t->field:t->surface; }
+static inline uint32_t desk_theme_shadow(const struct desk_theme *t) { return t->shadow?t->shadow:t->border; }
+/* Shared chrome primitives preserve the incoming clip. */
+void desk_theme_gradient(struct desk_canvas *canvas, struct desk_rect frame, uint32_t top, uint32_t bottom);
+void desk_theme_panel(struct desk_canvas *canvas, struct desk_rect frame, const struct desk_theme *theme, int pressed, int focused);
 
 enum desk_widget_event_type {
     DESK_WIDGET_POINTER, DESK_WIDGET_CANCEL, DESK_WIDGET_ACTIVATE,
