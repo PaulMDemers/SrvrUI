@@ -14,11 +14,17 @@ struct desk_theme {
     int32_t spacing, padding, control_height;
     /* Zero retains legacy surface/border behavior for older initializers. */
     uint32_t field, shadow;
+    uint32_t chrome_top, chrome_bottom, chrome_border, glass_tint;
+    unsigned glass_alpha, corner_radius;
 };
 extern const struct desk_theme desk_theme_silver, desk_theme_quiet;
 static inline uint32_t desk_theme_field(const struct desk_theme *t) { return t->field?t->field:t->surface; }
 static inline uint32_t desk_theme_shadow(const struct desk_theme *t) { return t->shadow?t->shadow:t->border; }
+/* Caller-owned resolution: accent Blue/Graphite/Teal, glass Solid/Subtle/Clear,
+ * text size 16/20. Invalid values return -1 without changing the destination. */
+int desk_theme_configure(struct desk_theme *theme,unsigned accent,unsigned glass,unsigned text_size);
 /* Shared chrome primitives preserve the incoming clip. */
+void desk_theme_glass(struct desk_canvas *canvas,struct desk_rect frame,uint32_t top,uint32_t bottom,unsigned alpha,unsigned radius);
 void desk_theme_gradient(struct desk_canvas *canvas, struct desk_rect frame, uint32_t top, uint32_t bottom);
 void desk_theme_panel(struct desk_canvas *canvas, struct desk_rect frame, const struct desk_theme *theme, int pressed, int focused);
 

@@ -44,7 +44,7 @@ Normal Text and Files share its stable allocations, owned-dialog routing,
 sequential Quit and explicit accepted-work retirement. It adds no fixed window
 count and keeps allocation/transport outside the pure widgets. Read the
 [application lifecycle
-contract](https://github.com/PaulMDemers/SrvrOS/blob/main/docs/desktop-application-lifecycle.md). Current protocol v15
+contract](https://github.com/PaulMDemers/SrvrOS/blob/main/docs/desktop-application-lifecycle.md). Current protocol v16
 supports shared connection ownership, parented dialogs and cooperative app Quit;
 `desk_app` remains the per-window interface. The single-window sequence below
 is not a reason to create a new process or transport for each document. Read the
@@ -127,7 +127,12 @@ tree or dynamic object graph is introduced yet.
 ## Base controls
 
 - Immutable `desk_theme_silver` and compatible `desk_theme_quiet` with cool silver surfaces, blue focus and selection,
-  fonts and spacing. Pass an application-owned copy for a different theme. The appended `field` and `shadow` colors fall back to `surface` and `border` when zero, preserving older custom initializers.
+  fonts and spacing. `desk_theme_configure()` resolves caller-owned Blue/Graphite/Teal
+  palettes and Solid/Subtle/Clear chrome. `desk_theme_glass()` provides clipped,
+  rounded destination blending without allocations or neighboring-pixel sampling.
+  Applications use SrvrOS's `desk_app_theme()` adapter for each window's current
+  authoritative appearance. See the [global theme contract](https://github.com/PaulMDemers/SrvrOS/blob/main/docs/desktop-theme.md).
+  Pass an application-owned copy for a different theme. The appended `field` and `shadow` colors fall back to `surface` and `border` when zero, preserving older custom initializers.
 - Clipped labels and rectangle containment/inset helpers. A shared 11×8 native
   checkmark draws menu and checkbox state without depending on font coverage.
 - Vertical scrollbar with independent content/viewport extents, bounded wheel

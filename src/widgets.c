@@ -6,7 +6,9 @@
     .surface=0xf0f1f3, .text=0x252a30, .muted=0x596572, .accent=0x2674b8, \
     .selected=0xc9e1f6, .track=0xe2e5e9, .thumb=0xaab5c0, .border=0x8d99a5, \
     .body=&desk_font_16, .heading=&desk_font_20, \
-    .spacing=4, .padding=8, .control_height=28, .field=0xffffff, .shadow=0xb5bcc4 \
+    .spacing=4, .padding=8, .control_height=28, .field=0xffffff, .shadow=0xb5bcc4, \
+    .chrome_top=0xe6f2fb, .chrome_bottom=0xaac8df, .chrome_border=0x67869f, \
+    .glass_tint=0x2674b8, .glass_alpha=224, .corner_radius=3 \
 }
 const struct desk_theme desk_theme_silver = SILVER_THEME;
 const struct desk_theme desk_theme_quiet = SILVER_THEME;
@@ -23,6 +25,50 @@ static uint32_t mix(uint32_t a,uint32_t b,unsigned n,unsigned d) {
     }
     return result;
 }
+int desk_theme_configure(struct desk_theme *out,unsigned accent,unsigned glass,unsigned size) {
+    if(!out || accent>2 || glass>2 || (size!=16 && size!=20)) return -1;
+    static const uint32_t accents[]={0x2674b8,0x525d6c,0x16776e};
+    static const uint32_t selections[]={0xc9e1f6,0xd8dde5,0xc6e7df};
+    static const uint32_t tops[]={0xe6f2fb,0xe9edf2,0xe5f5ef};
+    static const uint32_t bottoms[]={0xaac8df,0xb9c3d0,0xa7d0c5};
+    static const uint32_t borders[]={0x67869f,0x77818e,0x5d9184};
+    static const unsigned alphas[]={255,224,184};
+    struct desk_theme next=desk_theme_silver;
+    next.accent=accents[accent];next.selected=selections[accent];
+    next.chrome_top=tops[accent];next.chrome_bottom=bottoms[accent];
+    next.chrome_border=borders[accent];next.glass_tint=accents[accent];
+    next.glass_alpha=alphas[glass];next.body=size==20?&desk_font_20:&desk_font_16;
+    *out=next;return 0;
+}
+/* Rounded spans depend on the original frame, never on the damage clip.
+ * Blend only the destination pixel: partial redraws need no neighboring samples. */
+void desk_theme_glass(struct desk_canvas *c,struct desk_rect r,uint32_t top,uint32_t bottom,unsigned alpha,unsigned radius) {
+    if(!valid(r) || !alpha) return;
+    if(alpha>255) alpha=255;
+    if(radius>8) radius=8;
+    if(radius>(unsigned)r.w/2) radius=(unsigned)r.w/2;
+    if(radius>(unsigned)r.h/2) radius=(unsigned)r.h/2;
+    struct desk_rect visible=desk_intersect(desk_intersect(r,c->clip),(struct desk_rect){0,0,c->width,c->height});
+    for(int64_t y=visible.y;y<(int64_t)visible.y+visible.h;y++) {
+        unsigned row=(unsigned)(y-r.y),edge=row<(unsigned)r.h-1-row?row:(unsigned)r.h-1-row;
+        unsigned inset=0;
+        if(edge<radius) {
+            unsigned dy=radius-1-edge;
+            while(inset<radius && (radius-inset)*(radius-inset)+dy*dy>radius*radius) inset++;
+        }
+        int64_t left=(int64_t)r.x+inset,right=(int64_t)r.x+r.w-inset;
+        if(left<visible.x) left=visible.x;
+        if(right>(int64_t)visible.x+visible.w) right=(int64_t)visible.x+visible.w;
+        if(right<=left) continue;
+        uint32_t color=mix(top,bottom,row,r.h>1?(unsigned)r.h-1:1);
+        if(alpha==255) desk_fill(c,(struct desk_rect){(int32_t)left,(int32_t)y,(int32_t)(right-left),1},color);
+        else {
+            uint32_t *pixel=c->pixels+(size_t)y*c->stride+(size_t)left;
+            for(int64_t x=left;x<right;x++,pixel++) *pixel=mix(*pixel,color,alpha,255);
+            c->pixel_writes+=(uint64_t)(right-left);
+        }
+    }
+}
 void desk_theme_gradient(struct desk_canvas *c,struct desk_rect r,uint32_t top,uint32_t bottom) {
     if(!valid(r)) return;
     struct desk_rect visible=desk_intersect(desk_intersect(r,c->clip),
@@ -34,11 +80,12 @@ void desk_theme_gradient(struct desk_canvas *c,struct desk_rect r,uint32_t top,u
 }
 void desk_theme_panel(struct desk_canvas *c,struct desk_rect r,const struct desk_theme *t,int pressed,int focused) {
     if(!valid(r)) return;
-    desk_fill(c,r,focused?t->accent:t->border);
+    uint32_t border=focused?t->accent:t->border;
+    desk_theme_glass(c,r,border,border,255,t->corner_radius);
     struct desk_rect inner=desk_widget_inset(r,1);
     uint32_t light=mix(t->surface,0xffffff,1,8),dark=mix(t->surface,t->border,1,4);
     if(pressed) { light=mix(t->selected,t->border,1,4);dark=t->selected; }
-    desk_theme_gradient(c,inner,light,dark);
+    desk_theme_glass(c,inner,light,dark,255,t->corner_radius?t->corner_radius-1:0);
     if(inner.w>2 && inner.h>2 && !pressed)
         desk_fill(c,(struct desk_rect){inner.x+1,inner.y+1,inner.w-2,1},mix(t->surface,0xffffff,1,4));
 }
