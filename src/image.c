@@ -109,19 +109,25 @@ void desk_image_draw(struct desk_canvas *c,const struct desk_image *v,const stru
         /* Exact rational stepping removes a divide from every output pixel.
          * Start from the clipped left edge, retaining the division remainder,
          * so tiled and full draws sample precisely the same source pixels. */
-        uint64_t numerator=(uint64_t)(visible.x-x)*ONE;
-        uint32_t first=numerator/v->scale,first_remainder=numerator%v->scale;
-        uint32_t step=ONE/v->scale,remainder_step=ONE%v->scale;
+        unsigned density=desk_canvas_scale(c);
+        visible=desk_canvas_physical_rect(c,visible);
+        int64_t origin_x=(int64_t)x*density,origin_y=(int64_t)y*density;
+        uint64_t image_scale=(uint64_t)v->scale*density;
+        uint64_t numerator=(uint64_t)(visible.x-origin_x)*ONE;
+        uint32_t first=numerator/image_scale;
+        uint64_t first_remainder=numerator%image_scale;
+        uint32_t step=ONE/image_scale;
+        uint64_t remainder_step=ONE%image_scale;
         for(int py=visible.y;py<visible.y+visible.h;py++) {
-            uint32_t sy=(uint32_t)((uint64_t)(py-y)*ONE/v->scale);if(sy>=v->height) sy=v->height-1;
+            uint32_t sy=(uint32_t)((uint64_t)(py-origin_y)*ONE/image_scale);if(sy>=v->height) sy=v->height-1;
             const uint32_t *source=v->pixels+(size_t)sy*v->width;
             uint32_t *target=c->pixels+(size_t)py*c->stride+visible.x;
-            uint32_t sx=first,remainder=first_remainder;
+            uint32_t sx=first;uint64_t remainder=first_remainder;
             for(int px=visible.x;px<visible.x+visible.w;px++) {
-                uint32_t bg=(((px-x)/8+(py-y)/8)&1)?0xd7ddd5:0xf1f0eb;
+                uint32_t bg=(((px-origin_x)/(8*density)+(py-origin_y)/(8*density))&1)?0xd7ddd5:0xf1f0eb;
                 *target++=blend(source[sx<v->width?sx:v->width-1],bg);
                 sx+=step;remainder+=remainder_step;
-                if(remainder>=v->scale) { remainder-=v->scale;sx++; }
+                if(remainder>=image_scale) { remainder-=image_scale;sx++; }
             }
         }
         c->pixel_writes+=(uint64_t)visible.w*visible.h;

@@ -2,6 +2,7 @@
  * DejaVu Sans SHA256: b4c632e3cdf9acc7f28758fb5a323c8524d7fc6660d46904d9b6cbe2809c419c
  * Font license: userspace/widgets/assets/fonts/LICENSE-DejaVu.txt */
 #include <srvros/desk_render.h>
+#include "desk_font_2x.inc"
 const char desk_font_license[] = "Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/\nUpstream-Name: DejaVu fonts\nUpstream-Author: Stepan Roh <src@users.sourceforge.net> (original author),\n                  see /usr/share/doc/fonts-dejavu-core/AUTHORS for full list\nSource: https://dejavu-fonts.github.io/\n\nFiles: *\nCopyright: Copyright (c) 2003 by Bitstream, Inc. All Rights Reserved. \n Bitstream Vera is a trademark of Bitstream, Inc.\n DejaVu changes are in public domain.\nLicense: bitstream-vera\n Permission is hereby granted, free of charge, to any person obtaining a copy\n of the fonts accompanying this license (\"Fonts\") and associated\n documentation files (the \"Font Software\"), to reproduce and distribute the\n Font Software, including without limitation the rights to use, copy, merge,\n publish, distribute, and/or sell copies of the Font Software, and to permit\n persons to whom the Font Software is furnished to do so, subject to the\n following conditions:\n .\n The above copyright and trademark notices and this permission notice shall\n be included in all copies of one or more of the Font Software typefaces.\n .\n The Font Software may be modified, altered, or added to, and in particular\n the designs of glyphs or characters in the Fonts may be modified and\n additional glyphs or characters may be added to the Fonts, only if the fonts\n are renamed to names not containing either the words \"Bitstream\" or the word\n \"Vera\".\n .\n This License becomes null and void to the extent applicable to Fonts or Font\n Software that has been modified and is distributed under the \"Bitstream\n Vera\" names.\n .\n The Font Software may be sold as part of a larger software package but no\n copy of one or more of the Font Software typefaces may be sold by itself.\n .\n THE FONT SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS\n OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF MERCHANTABILITY,\n FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT OF COPYRIGHT, PATENT,\n TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL BITSTREAM OR THE GNOME\n FOUNDATION BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, INCLUDING\n ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL DAMAGES,\n WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF\n THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM OTHER DEALINGS IN THE\n FONT SOFTWARE.\n .\n Except as contained in this notice, the names of Gnome, the Gnome\n Foundation, and Bitstream Inc., shall not be used in advertising or\n otherwise to promote the sale, use or other dealings in this Font Software\n without prior written authorization from the Gnome Foundation or Bitstream\n Inc., respectively. For further information, contact: fonts at gnome dot\n org.\n\n";
 static const uint8_t alpha_16[] = {
     0,0,148,255,0,0,0,0,148,255,0,0,0,0,148,255,0,0,0,0,148,255,0,0,
@@ -1182,7 +1183,7 @@ static const struct desk_glyph glyphs_16[] = {
     {8722,22987,13,5,0,-5,13},
     {65533,23052,17,17,0,-15,16},
 };
-const struct desk_font desk_font_16 = {glyphs_16, alpha_16, 202, 15, 22};
+const struct desk_font desk_font_16 = {glyphs_16, alpha_16, 202, 15, 22, &raster_16_2x};
 static const uint8_t alpha_20[] = {
     0,0,0,252,255,0,0,0,0,0,0,252,255,0,0,0,0,0,0,252,255,0,0,0,
     0,0,0,252,255,0,0,0,0,0,0,252,255,0,0,0,0,0,0,252,255,0,0,0,
@@ -2930,7 +2931,7 @@ static const struct desk_glyph glyphs_20[] = {
     {8722,36404,17,7,0,-7,17},
     {65533,36523,21,21,0,-19,21},
 };
-const struct desk_font desk_font_20 = {glyphs_20, alpha_20, 202, 19, 27};
+const struct desk_font desk_font_20 = {glyphs_20, alpha_20, 202, 19, 27, &raster_20_2x};
 /* DejaVuSansMono.ttf SHA256: a54dca07c76d6289e717e75e0a58c0128f6d7269ef3faf76417c9d7d3bba37ab */
 static const uint8_t alpha_mono_16[] = {
     0,0,0,0,248,160,0,0,0,0,0,0,0,0,248,160,0,0,0,0,0,0,0,0,
@@ -5134,7 +5135,7 @@ static const struct desk_glyph glyphs_mono_16[] = {
     {9599,44441,10,20,0,-16,10},
     {65533,44641,10,17,0,-15,10},
 };
-const struct desk_font desk_font_mono_16 = {glyphs_mono_16, alpha_mono_16, 330, 15, 22};
+const struct desk_font desk_font_mono_16 = {glyphs_mono_16, alpha_mono_16, 330, 15, 22, &raster_mono_16_2x};
 /* DejaVuSansMono.ttf SHA256: a54dca07c76d6289e717e75e0a58c0128f6d7269ef3faf76417c9d7d3bba37ab */
 static const uint8_t alpha_digits_32[] = {
     0,0,0,0,0,0,0,92,255,255,255,148,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -5379,4 +5380,4 @@ static const struct desk_glyph glyphs_digits_32[] = {
     {58,4465,19,17,0,-17,19},
     {65533,4788,19,32,0,-29,19},
 };
-const struct desk_font desk_font_digits_32 = {glyphs_digits_32, alpha_digits_32, 14, 30, 41};
+const struct desk_font desk_font_digits_32 = {glyphs_digits_32, alpha_digits_32, 14, 30, 41, &raster_digits_32_2x};

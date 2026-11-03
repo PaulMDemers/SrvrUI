@@ -126,7 +126,21 @@ int main(void) {
     foreign=(SDL_Event){0}; foreign.type=SDL_EVENT_WINDOW_FOCUS_LOST; foreign.window.windowID=SDL_GetWindowID(w)+1;
     assert(!srvrui_sdl3_event(&h,&foreign).flags && ui.active);
 
+    int logical_width=h.canvas.width,logical_height=h.canvas.height;
+    size_t kept_length=model.length,kept_caret=model.caret;
+    button(&h,SDL_EVENT_MOUSE_BUTTON_DOWN,20,55);assert(b.armed);
+    assert(!srvrui_sdl3_set_density(&h,2));
+    assert(!b.armed && ui.capture==-1 && !h.down);
+    assert(h.canvas.width==logical_width && h.canvas.height==logical_height);
+    assert(desk_canvas_pixel_width(&h.canvas)==logical_width*2 && h.canvas.stride==logical_width*2);
+    assert(model.length==kept_length && model.caret==kept_caret);
+    button(&h,SDL_EVENT_MOUSE_BUTTON_DOWN,20,55);assert(b.armed);
+    assert(button(&h,SDL_EVENT_MOUSE_BUTTON_UP,20,55).flags & DESK_WIDGET_ACTIVATED);
     uint32_t *before=h.pixels; int before_width=h.canvas.width;
+    assert(srvrui_sdl3_set_density(&h,3)<0 && h.pixels==before && desk_canvas_scale(&h.canvas)==2);
+    assert(SDL_SetWindowSize(w,5000,160));
+    assert(window_event(&h,SDL_EVENT_WINDOW_RESIZED).flags & SRVRUI_SDL3_ERROR);
+    assert(h.pixels==before && h.canvas.width==before_width);
     assert(SDL_SetWindowSize(w,9000,160));
     assert(window_event(&h,SDL_EVENT_WINDOW_RESIZED).flags & SRVRUI_SDL3_ERROR);
     assert(h.pixels==before && h.canvas.width==before_width);
@@ -138,6 +152,7 @@ int main(void) {
     SDL_Surface *surface=SDL_GetWindowSurface(w); Uint8 r,g,blue,a;
     assert(surface && SDL_ReadSurfacePixel(surface,0,0,&r,&g,&blue,&a));
     assert(r==0x12 && g==0xa4 && blue==0xef);
+    assert(!srvrui_sdl3_set_density(&h,1) && desk_canvas_scale(&h.canvas)==1);
     assert(SDL_SetClipboardText(saved)); SDL_free(saved);
     srvrui_sdl3_destroy(&h); SDL_DestroyWindow(w); SDL_Quit();
     puts("SDL3 adapter: PASS"); return 0;

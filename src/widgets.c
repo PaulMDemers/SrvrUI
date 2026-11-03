@@ -67,34 +67,39 @@ void desk_theme_glass(struct desk_canvas *c,struct desk_rect r,uint32_t top,uint
     if(radius>8) radius=8;
     if(radius>(unsigned)r.w/2) radius=(unsigned)r.w/2;
     if(radius>(unsigned)r.h/2) radius=(unsigned)r.h/2;
-    struct desk_rect visible=desk_intersect(desk_intersect(r,c->clip),(struct desk_rect){0,0,c->width,c->height});
+    unsigned scale=desk_canvas_scale(c);
+    struct desk_rect visible=desk_canvas_physical_rect(c,desk_intersect(r,c->clip));
+    int64_t rx=(int64_t)r.x*scale,ry=(int64_t)r.y*scale;
+    unsigned height=(unsigned)r.h*scale;
+    radius*=scale;
     for(int64_t y=visible.y;y<(int64_t)visible.y+visible.h;y++) {
-        unsigned row=(unsigned)(y-r.y),edge=row<(unsigned)r.h-1-row?row:(unsigned)r.h-1-row;
+        unsigned row=(unsigned)(y-ry),edge=row<height-1-row?row:height-1-row;
         unsigned inset=0;
         if(edge<radius) {
             unsigned dy=radius-1-edge;
             while(inset<radius && (radius-inset)*(radius-inset)+dy*dy>radius*radius) inset++;
         }
-        int64_t left=(int64_t)r.x+inset,right=(int64_t)r.x+r.w-inset;
+        int64_t left=rx+inset,right=rx+(int64_t)r.w*scale-inset;
         if(left<visible.x) left=visible.x;
         if(right>(int64_t)visible.x+visible.w) right=(int64_t)visible.x+visible.w;
         if(right<=left) continue;
-        uint32_t color=mix(top,bottom,row,r.h>1?(unsigned)r.h-1:1);
-        if(alpha==255) desk_fill(c,(struct desk_rect){(int32_t)left,(int32_t)y,(int32_t)(right-left),1},color);
-        else {
-            uint32_t *pixel=c->pixels+(size_t)y*c->stride+(size_t)left;
-            for(int64_t x=left;x<right;x++,pixel++) *pixel=mix(*pixel,color,alpha,255);
-            c->pixel_writes+=(uint64_t)(right-left);
-        }
+        uint32_t color=mix(top,bottom,row,height>1?height-1:1);
+        uint32_t *pixel=c->pixels+(size_t)y*c->stride+(size_t)left;
+        for(int64_t x=left;x<right;x++,pixel++) *pixel=alpha==255?color:mix(*pixel,color,alpha,255);
+        c->pixel_writes+=(uint64_t)(right-left);
     }
 }
 void desk_theme_gradient(struct desk_canvas *c,struct desk_rect r,uint32_t top,uint32_t bottom) {
     if(!valid(r)) return;
-    struct desk_rect visible=desk_intersect(desk_intersect(r,c->clip),
-                                            (struct desk_rect){0,0,c->width,c->height});
+    unsigned scale=desk_canvas_scale(c);
+    struct desk_rect visible=desk_canvas_physical_rect(c,desk_intersect(r,c->clip));
+    unsigned height=(unsigned)r.h*scale;
     for(int64_t y=visible.y;y<(int64_t)visible.y+visible.h;y++) {
-        unsigned n=(unsigned)(y-r.y),d=r.h>1?(unsigned)(r.h-1):1;
-        desk_fill(c,(struct desk_rect){visible.x,(int32_t)y,visible.w,1},mix(top,bottom,n,d));
+        unsigned n=(unsigned)(y-(int64_t)r.y*scale),d=height>1?height-1:1;
+        uint32_t color=mix(top,bottom,n,d);
+        uint32_t *pixel=c->pixels+(size_t)y*c->stride+visible.x;
+        for(int x=0;x<visible.w;x++)pixel[x]=color;
+        c->pixel_writes+=visible.w;
     }
 }
 void desk_theme_selection(struct desk_canvas *c,struct desk_rect r,const struct desk_theme *t) {
@@ -303,6 +308,18 @@ void desk_button_draw(struct desk_canvas *c, const struct desk_button *b,
 }
 
 void desk_checkmark_draw(struct desk_canvas *c,int32_t x,int32_t y,uint32_t color) {
+    if(desk_canvas_scale(c)==2) {
+        struct desk_rect r=desk_canvas_physical_rect(c,desk_intersect(c->clip,(struct desk_rect){x,y,11,8}));
+        /* Diagonal strokes sampled between the original integer control points. */
+        for(int py=r.y;py<r.y+r.h;py++)for(int px=r.x;px<r.x+r.w;px++) {
+            int64_t dx=(int64_t)px-(int64_t)x*2,dy=(int64_t)py-(int64_t)y*2;
+            int ink=0;
+            for(int i=0;i<=6 && !ink;i++)ink=dx>=i && dx<i+4 && dy>=6+i && dy<10+i;
+            for(int i=0;i<=12 && !ink;i++)ink=dx>=6+i && dx<10+i && dy>=12-i && dy<16-i;
+            if(ink) {c->pixels[(size_t)py*c->stride+px]=color&0xffffff;c->pixel_writes++;}
+        }
+        return;
+    }
     for(int i=0;i<4;i++) desk_fill(c,(struct desk_rect){x+i,y+3+i,2,2},color);
     for(int i=0;i<7;i++) desk_fill(c,(struct desk_rect){x+3+i,y+6-i,2,2},color);
 }

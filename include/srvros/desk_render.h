@@ -11,6 +11,8 @@ struct desk_canvas {
     int32_t width, height, stride;
     struct desk_rect clip;
     uint64_t pixel_writes;
+    /* Logical width/height/clip; physical stride. Legacy zero means 1. */
+    unsigned scale;
 };
 struct desk_glyph {
     uint32_t codepoint, offset;
@@ -21,6 +23,13 @@ struct desk_font {
     const struct desk_glyph *glyphs;
     const uint8_t *alpha;
     uint16_t count, ascent, line_height;
+    /* Optional matching glyph order, physical bearings/coverage at 2x.
+     * Layout always uses the original logical metrics above. */
+    const struct desk_font_raster *density2;
+};
+struct desk_font_raster {
+    const struct desk_glyph *glyphs;
+    const uint8_t *alpha;
 };
 extern const struct desk_font desk_font_16, desk_font_20, desk_font_mono_16, desk_font_digits_32;
 extern const char desk_font_license[];
@@ -34,6 +43,15 @@ struct desk_damage {
 
 int desk_canvas_init(struct desk_canvas *c, uint32_t *pixels,
     int32_t width, int32_t height, int32_t stride);
+/* Backing is width*scale by height*scale pixels, with physical pixel stride.
+ * Only 1 and 2 are supported; rejection leaves the destination unchanged. */
+int desk_canvas_init_scaled(struct desk_canvas *c, uint32_t *pixels,
+    int32_t width, int32_t height, int32_t stride, unsigned scale);
+unsigned desk_canvas_scale(const struct desk_canvas *c);
+int32_t desk_canvas_pixel_width(const struct desk_canvas *c);
+int32_t desk_canvas_pixel_height(const struct desk_canvas *c);
+/* Clip to logical canvas bounds, then convert. Independent of draw clip. */
+struct desk_rect desk_canvas_physical_rect(const struct desk_canvas *c, struct desk_rect r);
 struct desk_rect desk_intersect(struct desk_rect a, struct desk_rect b);
 void desk_clip(struct desk_canvas *c, struct desk_rect clip);
 void desk_fill(struct desk_canvas *c, struct desk_rect r, uint32_t color);

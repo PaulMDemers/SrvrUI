@@ -137,8 +137,8 @@ static void close_app(struct app *a) { srvrui_sdl3_destroy(&a->host); if(a->wind
 static int save_ppm(struct app *a,const char *path) {
     FILE *f=fopen(path,"wb"); if(!f) return -1;
     struct desk_canvas *c=&a->host.canvas;
-    fprintf(f,"P6\n%d %d\n255\n",c->width,c->height);
-    for(int y=0;y<c->height;y++) for(int x=0;x<c->width;x++) {
+    fprintf(f,"P6\n%d %d\n255\n",desk_canvas_pixel_width(c),desk_canvas_pixel_height(c));
+    for(int y=0;y<desk_canvas_pixel_height(c);y++) for(int x=0;x<desk_canvas_pixel_width(c);x++) {
         uint32_t p=c->pixels[y*c->stride+x]; unsigned char rgb[3]={(unsigned char)(p>>16),(unsigned char)(p>>8),(unsigned char)p};
         if(fwrite(rgb,1,3,f)!=3) { fclose(f); return -1; }
     }
@@ -213,12 +213,18 @@ static int smoke(struct app *a,const char *dir) {
     puts("Smoke passed; wrote showcase-{Silver,Aero,Aqua,compact}.ppm"); return 0;
 }
 int main(int argc,char **argv) {
-    int is_smoke=argc==3 && !strcmp(argv[1],"--smoke");
-    int is_trace=argc==3 && !strcmp(argv[1],"--trace");
-    if(argc>1 && !is_smoke && !is_trace) { fprintf(stderr,"Usage: %s [--smoke OUTPUT_DIRECTORY | --trace LOG_PATH]\n",argv[0]); return 2; }
+    const char *smoke_path=NULL,*trace_path=NULL;unsigned density=1;
+    for(int i=1;i<argc;i++) {
+        if(!strcmp(argv[i],"--smoke") && i+1<argc)smoke_path=argv[++i];
+        else if(!strcmp(argv[i],"--trace") && i+1<argc)trace_path=argv[++i];
+        else if(!strcmp(argv[i],"--density") && i+1<argc && (!strcmp(argv[i+1],"1") || !strcmp(argv[i+1],"2")))density=(unsigned)(argv[++i][0]-'0');
+        else { fprintf(stderr,"Usage: %s [--density 1|2] [--smoke OUTPUT_DIRECTORY | --trace LOG_PATH]\n",argv[0]);return 2; }
+    }
+    if(smoke_path && trace_path)return 2;
     struct app a; if(init(&a)<0) { fprintf(stderr,"SDL showcase init: %s\n",SDL_GetError()); close_app(&a); return 1; }
-    if(is_trace) { a.trace=fopen(argv[2],"w"); if(!a.trace) { perror("trace"); close_app(&a); return 1; } trace_geometry(&a,"init"); fflush(a.trace); }
-    if(is_smoke) { int result=smoke(&a,argv[2]);  close_app(&a); return result<0; }
+    if(srvrui_sdl3_set_density(&a.host,density)<0) { fprintf(stderr,"SDL showcase density: %s\n",SDL_GetError());close_app(&a);return 1; }
+    if(trace_path) { a.trace=fopen(trace_path,"w"); if(!a.trace) { perror("trace"); close_app(&a); return 1; } trace_geometry(&a,"init"); fflush(a.trace); }
+    if(smoke_path) { int result=smoke(&a,smoke_path); close_app(&a); return result<0; }
     int running=1, dirty=1, failed=0;
     while(running) {
         if(dirty) { if(paint(&a)<0) { failed=1; break; } dirty=0; }

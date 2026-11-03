@@ -27,7 +27,8 @@ static struct desk_edit *focused_edit(struct srvrui_sdl3 *h) {
     return c && c->kind == DESK_CONTROL_EDIT ? c->state : NULL;
 }
 
-static int resize_canvas(struct srvrui_sdl3 *h) {
+static int resize_canvas(struct srvrui_sdl3 *h,unsigned render_scale) {
+    if(render_scale!=1 && render_scale!=2) { SDL_SetError("SrvrUI density must be 1 or 2");return -1; }
     int w, height;
     if (!SDL_GetWindowSize(h->window, &w, &height)) return -1;
     float density = SDL_GetWindowPixelDensity(h->window);
@@ -35,19 +36,19 @@ static int resize_canvas(struct srvrui_sdl3 *h) {
     float coordinates = density > 0 ? scale / density : 1;
     if (!isfinite(coordinates) || coordinates <= 0) coordinates = 1;
     double width = floor(w / (double)coordinates), rows = floor(height / (double)coordinates);
-    if (width < 1 || rows < 1 || width > 8192 || rows > 8192) {
-        SDL_SetError("SrvrUI canvas dimensions must be between 1 and 8192");
+    if (width < 1 || rows < 1 || width*render_scale > 8192 || rows*render_scale > 8192) {
+        SDL_SetError("SrvrUI physical canvas dimensions must be between 1 and 8192");
         return -1;
     }
     int iw = (int)width, ih = (int)rows;
-    if (h->pixels && iw == h->canvas.width && ih == h->canvas.height) {
+    if (h->pixels && iw == h->canvas.width && ih == h->canvas.height && render_scale==desk_canvas_scale(&h->canvas)) {
         h->coordinate_scale = coordinates;
         return 0;
     }
-    uint32_t *pixels = calloc((size_t)iw * (size_t)ih, sizeof(*pixels));
+    uint32_t *pixels = calloc((size_t)iw * ih * render_scale * render_scale, sizeof(*pixels));
     if (!pixels) { SDL_SetError("SrvrUI canvas allocation failed"); return -1; }
     struct desk_canvas canvas;
-    if (desk_canvas_init(&canvas, pixels, iw, ih, iw)) { free(pixels); return -1; }
+    if (desk_canvas_init_scaled(&canvas, pixels, iw, ih, iw*(int)render_scale,render_scale)) { free(pixels); return -1; }
     free(h->pixels);
     h->pixels = pixels;
     h->canvas = canvas;
@@ -86,10 +87,18 @@ int srvrui_sdl3_sync_text_input(struct srvrui_sdl3 *h) {
 int srvrui_sdl3_init(struct srvrui_sdl3 *h, SDL_Window *window, struct desk_ui *ui) {
     if (!h || !window || !ui) { SDL_SetError("SrvrUI requires a window and UI"); return -1; }
     *h = (struct srvrui_sdl3){.window=window, .ui=ui, .coordinate_scale=1, .text_focus=-1};
-    if (resize_canvas(h) || srvrui_sdl3_sync_text_input(h)) {
+    if (resize_canvas(h,1) || srvrui_sdl3_sync_text_input(h)) {
         srvrui_sdl3_destroy(h);
         return -1;
     }
+    return 0;
+}
+
+int srvrui_sdl3_set_density(struct srvrui_sdl3 *h,unsigned density) {
+    if(!h || !h->window || !h->ui || resize_canvas(h,density))return -1;
+    h->down=0;h->wheel_x=h->wheel_y=0;
+    (void)SDL_CaptureMouse(false);
+    (void)desk_ui_pointer(h->ui,(struct desk_widget_event){.type=DESK_WIDGET_CANCEL},0);
     return 0;
 }
 
@@ -107,7 +116,7 @@ int srvrui_sdl3_present(struct srvrui_sdl3 *h) {
      * not alpha: explicitly use XRGB8888 and convert to the host format. */
     SDL_Surface *target = SDL_GetWindowSurface(h->window);
     if (!target) return -1;
-    SDL_Surface *source = SDL_CreateSurfaceFrom(h->canvas.width, h->canvas.height,
+    SDL_Surface *source = SDL_CreateSurfaceFrom(desk_canvas_pixel_width(&h->canvas), desk_canvas_pixel_height(&h->canvas),
         SDL_PIXELFORMAT_XRGB8888, h->pixels, h->canvas.stride * (int)sizeof(uint32_t));
     if (!source) return -1;
     bool ok = SDL_BlitSurfaceScaled(source, NULL, target, NULL, SDL_SCALEMODE_NEAREST);
@@ -206,7 +215,7 @@ struct desk_action srvrui_sdl3_event(struct srvrui_sdl3 *h, const SDL_Event *ev)
     case SDL_EVENT_WINDOW_CLOSE_REQUESTED: result.flags=SRVRUI_SDL3_QUIT; break;
     case SDL_EVENT_WINDOW_RESIZED: case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
     case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED:
-        result.flags=resize_canvas(h) ? SRVRUI_SDL3_ERROR : SRVRUI_SDL3_LAYOUT | DESK_WIDGET_REDRAW;
+        result.flags=resize_canvas(h,desk_canvas_scale(&h->canvas)) ? SRVRUI_SDL3_ERROR : SRVRUI_SDL3_LAYOUT | DESK_WIDGET_REDRAW;
         h->down=0; h->wheel_x=h->wheel_y=0;
         (void)SDL_CaptureMouse(false);
         result.flags |= desk_ui_pointer(h->ui,(struct desk_widget_event){.type=DESK_WIDGET_CANCEL},0).flags;

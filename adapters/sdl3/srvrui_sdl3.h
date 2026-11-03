@@ -20,6 +20,9 @@ struct srvrui_sdl3 {
 };
 /* SDL video and window creation remain with the caller. */
 int srvrui_sdl3_init(struct srvrui_sdl3 *host, SDL_Window *window, struct desk_ui *ui);
+/* Explicit 1x/2x backing; logical layout/input are unchanged. Default is 1x.
+ * Success cancels capture and requires a redraw; failure retains the canvas. */
+int srvrui_sdl3_set_density(struct srvrui_sdl3 *host, unsigned density);
 void srvrui_sdl3_destroy(struct srvrui_sdl3 *host);
 /* Resize invalidates old canvas pointers only on success; returns layout flag. */
 struct desk_action srvrui_sdl3_event(struct srvrui_sdl3 *host, const SDL_Event *event);

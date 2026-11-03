@@ -1,5 +1,8 @@
 # SrvrUI — native desktop widget library
 
+Explicit [1x/2x backing density](docs/render-density.md) keeps widget geometry
+logical and adds native 2x font coverage. Existing canvases default to 1x.
+
 The portable core and optional SDL3 adapter now have a standalone CMake build.
 See [the host guide](docs/host-showcase.md) for the macOS showcase, reproducible
 SDL3 dependency, embedding contract, tests and current platform limits.

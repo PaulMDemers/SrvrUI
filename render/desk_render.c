@@ -15,9 +15,24 @@ struct desk_rect desk_intersect(struct desk_rect a, struct desk_rect b) {
 
 int desk_canvas_init(struct desk_canvas *c, uint32_t *pixels,
     int32_t width, int32_t height, int32_t stride) {
-    if (!c || !pixels || width <= 0 || height <= 0 || stride < width ||
-        width > 8192 || height > 8192 || stride > 8192) return -1;
-    *c = (struct desk_canvas){pixels, width, height, stride, {0,0,width,height}, 0};
+    return desk_canvas_init_scaled(c,pixels,width,height,stride,1);
+}
+
+unsigned desk_canvas_scale(const struct desk_canvas *c) { return c->scale==2?2:1; }
+int32_t desk_canvas_pixel_width(const struct desk_canvas *c) { return c->width*(int32_t)desk_canvas_scale(c); }
+int32_t desk_canvas_pixel_height(const struct desk_canvas *c) { return c->height*(int32_t)desk_canvas_scale(c); }
+struct desk_rect desk_canvas_physical_rect(const struct desk_canvas *c,struct desk_rect r) {
+    r=desk_intersect(r,(struct desk_rect){0,0,c->width,c->height});
+    int32_t s=(int32_t)desk_canvas_scale(c);
+    return (struct desk_rect){r.x*s,r.y*s,r.w*s,r.h*s};
+}
+
+int desk_canvas_init_scaled(struct desk_canvas *c,uint32_t *pixels,
+    int32_t width,int32_t height,int32_t stride,unsigned scale) {
+    if (!c || !pixels || (scale!=1 && scale!=2) || width<=0 || height<=0 ||
+        width>8192/(int32_t)scale || height>8192/(int32_t)scale ||
+        stride<width*(int32_t)scale || stride>8192) return -1;
+    *c = (struct desk_canvas){pixels, width, height, stride, {0,0,width,height}, 0, scale};
     return 0;
 }
 
@@ -26,7 +41,7 @@ void desk_clip(struct desk_canvas *c, struct desk_rect clip) {
 }
 
 void desk_fill(struct desk_canvas *c, struct desk_rect r, uint32_t color) {
-    r = desk_intersect(r, c->clip);
+    r = desk_canvas_physical_rect(c,desk_intersect(r,c->clip));
     for (int32_t y = r.y; y < r.y+r.h; y++) {
         uint32_t *row = c->pixels + (size_t)y*c->stride + r.x;
         for (int32_t x = 0; x < r.w; x++) row[x] = color & 0xffffff;
@@ -85,18 +100,28 @@ static uint32_t blend(uint32_t fg, uint32_t bg, unsigned alpha) {
 
 void desk_text(struct desk_canvas *c, const struct desk_font *font,
     int32_t x, int32_t y, const char *text, uint32_t color) {
+    unsigned scale=desk_canvas_scale(c);
+    struct desk_rect clip=desk_canvas_physical_rect(c,c->clip);
     int64_t pen=x, baseline=(int64_t)y+font->ascent;
     uint32_t cp;
     while ((cp=desk_utf8_next(&text))) {
         if (cp=='\n') { pen=x; baseline+=font->line_height; continue; }
         const struct desk_glyph *g=glyph(font,cp);
-        int64_t left=pen+g->left, top=baseline+g->top;
-        int64_t x0=max64(left,c->clip.x), y0=max64(top,c->clip.y);
-        int64_t x1=min64(left+g->width,(int64_t)c->clip.x+c->clip.w);
-        int64_t y1=min64(top+g->height,(int64_t)c->clip.y+c->clip.h);
+        const struct desk_glyph *r=g;
+        const uint8_t *alpha=font->alpha;
+        unsigned sample_scale=scale;
+        if(scale==2 && font->density2) {
+            r=&font->density2->glyphs[g-font->glyphs];
+            alpha=font->density2->alpha;sample_scale=1;
+        }
+        int64_t left=pen*scale+(int64_t)r->left*sample_scale;
+        int64_t top=baseline*scale+(int64_t)r->top*sample_scale;
+        int64_t x0=max64(left,clip.x), y0=max64(top,clip.y);
+        int64_t x1=min64(left+(int64_t)r->width*sample_scale,(int64_t)clip.x+clip.w);
+        int64_t y1=min64(top+(int64_t)r->height*sample_scale,(int64_t)clip.y+clip.h);
         for (int64_t py=y0; py<y1; py++) {
             for (int64_t px=x0; px<x1; px++) {
-                unsigned a=font->alpha[g->offset+(py-top)*g->width+px-left];
+                unsigned a=alpha[r->offset+((py-top)/sample_scale)*r->width+(px-left)/sample_scale];
                 if (!a) continue;
                 uint32_t *pixel=c->pixels+(size_t)py*c->stride+px;
                 *pixel=blend(color,*pixel,a);
