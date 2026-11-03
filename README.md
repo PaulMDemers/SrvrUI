@@ -1,5 +1,9 @@
 # SrvrUI — native desktop widget library
 
+The portable core and optional SDL3 adapter now have a standalone CMake build.
+See [the host guide](docs/host-showcase.md) for the macOS showcase, reproducible
+SDL3 dependency, embedding contract, tests and current platform limits.
+
 The new desktop's shared controls live here. Files, Text and subsequent native
 apps should use and extend this library rather than maintain private controls.
 The base C API is `include/srvros/desk_widgets.h`, with focused headers for richer
@@ -778,12 +782,14 @@ pure widget archive. Controls retain their model/input/rendering responsibilitie
 ## Repository integration
 
 SrvrUI mounts at `userspace/widgets/` in SrvrOS. It supplies client-side pure
-controls and models; the renderer, fonts, desktop runtime, IPC and OS services
-remain in SrvrOS. Build/test from a recursive SrvrOS checkout with
+controls, models, themes, the software renderer and font atlases. Desktop runtime,
+IPC and OS services remain in SrvrOS. Build/test the matched OS integration with
 `sh tools/macos/build.sh test-widgets widget-theme-preview` on Apple Silicon,
 or `make test-widgets widget-theme-preview` on a supported host. The preview
 writes actual toolkit pixels to `build/review/theme/silver.ppm`.
 
 History was extracted from SrvrOS `74d38d59`. Publish a SrvrUI commit before
-updating the OS gitlink. No standalone OS-independent SDK is claimed; changes
-to rendering or runtime interfaces require matched integration revisions.
+updating the OS gitlink. The standalone target is a portable subset; OS-specific
+battery, listing, file-search, menu and popup models remain in the matched OS
+build. Changes to rendering or runtime interfaces require matched integration
+revisions. SDL stays in its optional adapter and never enters the widget archive.
