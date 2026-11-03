@@ -130,6 +130,11 @@ tree or dynamic object graph is introduced yet.
   fonts and spacing. `desk_theme_configure()` resolves caller-owned Blue/Graphite/Teal
   palettes and Solid/Subtle/Clear chrome. `desk_theme_glass()` provides clipped,
   rounded destination blending without allocations or neighboring-pixel sampling.
+  `desk_theme_configure_style()` selects complete Silver, Aero or Aqua profiles
+  with the same geometry and interaction contracts. Aero adds luminous bevels
+  and stronger cool selection; Aqua uses neutral silver and softer controls.
+  The original configure function remains a Silver wrapper. `style=0` preserves
+  custom initializers; selection and field primitives share the profile rules.
   Applications use SrvrOS's `desk_app_theme()` adapter for each window's current
   authoritative appearance. See the [global theme contract](https://github.com/PaulMDemers/SrvrOS/blob/main/docs/desktop-theme.md).
   Pass an application-owned copy for a different theme. The appended `field` and `shadow` colors fall back to `surface` and `border` when zero, preserving older custom initializers.

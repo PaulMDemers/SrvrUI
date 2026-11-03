@@ -133,7 +133,7 @@ void desk_list_draw(struct desk_canvas *c,const struct desk_list *l,const struct
     if(!l->count) desk_label_ellipsis(c,desk_widget_inset(rows,12),theme->body,"No items",theme->muted);
     for(int i=l->scroll.offset/ROW;i<l->count;i++) {
         int y=inner.y+i*ROW-l->scroll.offset;if(y>=inner.y+inner.h) break;
-        if(i==l->selected) desk_fill(c,(struct desk_rect){inner.x,y,rows.w,ROW},theme->selected);
+        if(i==l->selected) desk_theme_selection(c,(struct desk_rect){inner.x,y,rows.w,ROW},theme);
         if(l->items[i].folder) {
             desk_fill(c,(struct desk_rect){inner.x+8,y+7,8,4},theme->thumb);
             desk_fill(c,(struct desk_rect){inner.x+8,y+10,16,12},theme->thumb);

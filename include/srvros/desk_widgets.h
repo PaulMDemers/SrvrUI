@@ -8,6 +8,7 @@
  * change state fields directly; configure again on layout/enable changes.
  * Drawing intersects and restores the canvas clip, including an ancestor's clip.
  * Frames are half-open, with representable int32_t right/bottom coordinates. */
+enum desk_theme_style { DESK_THEME_SILVER=0, DESK_THEME_AERO=1, DESK_THEME_AQUA=2 };
 struct desk_theme {
     uint32_t surface, text, muted, accent, selected, track, thumb, border;
     const struct desk_font *body, *heading;
@@ -16,6 +17,7 @@ struct desk_theme {
     uint32_t field, shadow;
     uint32_t chrome_top, chrome_bottom, chrome_border, glass_tint;
     unsigned glass_alpha, corner_radius;
+    enum desk_theme_style style;
 };
 extern const struct desk_theme desk_theme_silver, desk_theme_quiet;
 static inline uint32_t desk_theme_field(const struct desk_theme *t) { return t->field?t->field:t->surface; }
@@ -23,9 +25,12 @@ static inline uint32_t desk_theme_shadow(const struct desk_theme *t) { return t-
 /* Caller-owned resolution: accent Blue/Graphite/Teal, glass Solid/Subtle/Clear,
  * text size 16/20. Invalid values return -1 without changing the destination. */
 int desk_theme_configure(struct desk_theme *theme,unsigned accent,unsigned glass,unsigned text_size);
+int desk_theme_configure_style(struct desk_theme *theme,unsigned style,unsigned accent,unsigned glass,unsigned text_size);
 /* Shared chrome primitives preserve the incoming clip. */
 void desk_theme_glass(struct desk_canvas *canvas,struct desk_rect frame,uint32_t top,uint32_t bottom,unsigned alpha,unsigned radius);
 void desk_theme_gradient(struct desk_canvas *canvas, struct desk_rect frame, uint32_t top, uint32_t bottom);
+void desk_theme_selection(struct desk_canvas *canvas,struct desk_rect frame,const struct desk_theme *theme);
+void desk_theme_field_draw(struct desk_canvas *canvas,struct desk_rect frame,const struct desk_theme *theme,int focused);
 void desk_theme_panel(struct desk_canvas *canvas, struct desk_rect frame, const struct desk_theme *theme, int pressed, int focused);
 
 enum desk_widget_event_type {

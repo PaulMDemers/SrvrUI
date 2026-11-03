@@ -37,9 +37,13 @@ void desk_check_draw(struct desk_canvas *c,const struct desk_check *check,const 
         if(check->checked) circle(c,x+8,y+8,4,b->enabled?t->accent:t->muted);
     } else {
         desk_theme_panel(c,(struct desk_rect){x,y,17,17},t,b->armed && b->inside,b->focused);
-        desk_fill(c,(struct desk_rect){x+2,y+2,13,13},fill);
+        if(t->style==DESK_THEME_SILVER) desk_fill(c,(struct desk_rect){x+2,y+2,13,13},fill);
+        else {
+            if(check->checked && b->enabled) fill=t->accent;
+            desk_theme_glass(c,(struct desk_rect){x+2,y+2,13,13},fill,fill,255,t->style==DESK_THEME_AQUA?3:2);
+        }
         if(check->checked) {
-            uint32_t color=b->enabled?t->accent:t->muted;
+            uint32_t color=b->enabled?(t->style==DESK_THEME_SILVER?t->accent:0xffffff):t->muted;
             desk_checkmark_draw(c,x+3,y+5,color);
         }
     }
