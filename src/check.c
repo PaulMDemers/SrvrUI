@@ -15,6 +15,19 @@ unsigned desk_check_event(struct desk_check *c,struct desk_widget_event event) {
     return flags;
 }
 static void circle(struct desk_canvas *c,int x,int y,int radius,uint32_t color) {
+    if(desk_canvas_scale(c)==2) {
+        /* Preserve the logical silhouette, sample its circle on physical cells. */
+        struct desk_rect r=desk_canvas_physical_rect(c,desk_intersect(c->clip,
+            (struct desk_rect){x-radius,y-radius,2*radius+1,2*radius+1}));
+        int64_t cx=(int64_t)x*4+2,cy=(int64_t)y*4+2,rr=radius*4+2;
+        for(int py=r.y;py<r.y+r.h;py++)for(int px=r.x;px<r.x+r.w;px++) {
+            int64_t dx=2*(int64_t)px+1-cx,dy=2*(int64_t)py+1-cy;
+            if(dx*dx+dy*dy<=rr*rr) {
+                c->pixels[(size_t)py*c->stride+px]=color&0xffffff;c->pixel_writes++;
+            }
+        }
+        return;
+    }
     for(int dy=-radius;dy<=radius;dy++) for(int dx=-radius;dx<=radius;dx++)
         if(dx*dx+dy*dy<=radius*radius) desk_fill(c,(struct desk_rect){x+dx,y+dy,1,1},color);
 }

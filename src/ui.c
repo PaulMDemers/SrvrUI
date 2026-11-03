@@ -53,7 +53,7 @@ static unsigned event(struct desk_control *c,struct desk_widget_event e,uint64_t
 }
 void desk_ui_init(struct desk_ui *ui) { *ui=(struct desk_ui){.focus=-1,.capture=-1,.active=1}; }
 int desk_ui_add(struct desk_ui *ui,unsigned id,enum desk_control_kind kind,void *state,const char *label) {
-    if(!id || !state || kind<DESK_CONTROL_BUTTON || kind>DESK_CONTROL_PAINT || ui->count==DESK_UI_MAX_CONTROLS) return -1;
+    if(!id || !state || kind<DESK_CONTROL_BUTTON || kind>DESK_CONTROL_PAINT || ui->count>=DESK_UI_MAX_CONTROLS) return -1;
     for(unsigned i=0;i<ui->count;i++) if(ui->controls[i].id==id || ui->controls[i].state==state) return -1;
     ui->controls[ui->count++]=(struct desk_control){id,kind,state,label?label:""};return 0;
 }

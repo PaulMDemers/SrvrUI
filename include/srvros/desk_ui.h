@@ -10,7 +10,7 @@
 #include <srvros/desk_properties.h>
 #include <srvros/desk_slider.h>
 #include <srvros/desk_paint.h>
-#define DESK_UI_MAX_CONTROLS 32
+#define DESK_UI_MAX_CONTROLS 40
 enum desk_control_kind { DESK_CONTROL_BUTTON, DESK_CONTROL_EDIT, DESK_CONTROL_LIST, DESK_CONTROL_CHECK, DESK_CONTROL_TABLE, DESK_CONTROL_CALENDAR, DESK_CONTROL_TABS, DESK_CONTROL_IMAGE, DESK_CONTROL_DOCUMENT, DESK_CONTROL_PROPERTIES, DESK_CONTROL_SLIDER, DESK_CONTROL_PAINT };
 struct desk_control {
     unsigned id;
