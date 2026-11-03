@@ -3,3 +3,5 @@ build/
 *.d
 *.a
 .DS_Store
+build-core/
+build-*/
