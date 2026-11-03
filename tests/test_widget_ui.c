@@ -6,7 +6,45 @@
 static struct srv_key_event key(unsigned usage,unsigned mods) {
     return (struct srv_key_event){.usage=usage,.modifiers=mods,.flags=SRV_KEY_DOWN_EVENT};
 }
+static void capacity(void) {
+    struct { uint64_t before;struct desk_ui ui;uint64_t after; } guarded={0};
+    guarded.before=0x123456789abcdef0ull;guarded.after=0xfedcba9876543210ull;
+    struct desk_ui *ui=&guarded.ui;desk_ui_init(ui);
+    struct desk_button buttons[DESK_UI_MAX_CONTROLS+1]={0};
+    /* Settings needs 35 registrations, including its trailing Display actions. */
+    assert(DESK_UI_MAX_CONTROLS>=35);
+    for(unsigned i=0;i<DESK_UI_MAX_CONTROLS+1;i++)
+        desk_button_configure(&buttons[i],(struct desk_rect){0,(int)i*24,80,20},1);
+    for(unsigned i=0;i<DESK_UI_MAX_CONTROLS;i++)
+        assert(!desk_ui_add(ui,i+1,DESK_CONTROL_BUTTON,&buttons[i],"Action"));
+    struct srv_key_event tab=key(SRV_KEY_TAB,0),backtab=key(SRV_KEY_TAB,SRV_KEY_SHIFT),enter=key(SRV_KEY_ENTER,0);
+    desk_ui_layout_changed(ui);assert(ui->focus==0);
+    for(unsigned i=0;i<DESK_UI_MAX_CONTROLS;i++) {
+        assert(ui->focus==(int)i && buttons[i].focused);
+        struct desk_action a=desk_ui_key(ui,&enter);
+        assert(a.id==i+1 && (a.flags&DESK_WIDGET_ACTIVATED));
+        desk_ui_key(ui,&tab);
+    }
+    assert(ui->focus==0);desk_ui_key(ui,&backtab);
+    assert(ui->focus==DESK_UI_MAX_CONTROLS-1);
+    struct desk_widget_event p={.type=DESK_WIDGET_POINTER,.x=10,
+        .y=(DESK_UI_MAX_CONTROLS-1)*24+10,.down=1,.pressed=1};
+    desk_ui_pointer(ui,p,100);
+    assert(ui->capture==DESK_UI_MAX_CONTROLS-1 && buttons[DESK_UI_MAX_CONTROLS-1].armed);
+    struct desk_ui snapshot;memcpy(&snapshot,ui,sizeof(snapshot));
+    assert(desk_ui_add(ui,DESK_UI_MAX_CONTROLS+1,DESK_CONTROL_BUTTON,&buttons[DESK_UI_MAX_CONTROLS],"Overflow")==-1);
+    assert(!memcmp(&snapshot,ui,sizeof(snapshot)));
+    p.down=p.pressed=0;struct desk_action a=desk_ui_pointer(ui,p,200);
+    assert(a.id==DESK_UI_MAX_CONTROLS && (a.flags&DESK_WIDGET_ACTIVATED) && ui->capture==-1);
+    assert(guarded.before==0x123456789abcdef0ull && guarded.after==0xfedcba9876543210ull);
+    /* An already out-of-range count is refused before scanning the array. */
+    ui->count=DESK_UI_MAX_CONTROLS+1;memcpy(&snapshot,ui,sizeof(snapshot));
+    assert(desk_ui_add(ui,99,DESK_CONTROL_BUTTON,&buttons[DESK_UI_MAX_CONTROLS],"Invalid")==-1);
+    assert(!memcmp(&snapshot,ui,sizeof(snapshot)));
+    assert(guarded.before==0x123456789abcdef0ull && guarded.after==0xfedcba9876543210ull);
+}
 int main(void) {
+    capacity();
     char data[64],undo[64];struct desk_text_buffer text;
     desk_text_buffer_init(&text,data,undo,64);
     struct desk_edit edit;desk_edit_init(&edit,&text,0);
