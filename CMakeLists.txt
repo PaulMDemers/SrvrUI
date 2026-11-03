@@ -42,6 +42,9 @@ if(SRVRUI_BUILD_SDL3)
     target_link_libraries(showcase PRIVATE srvrui_sdl3)
     if(APPLE)
         add_executable(SrvrUIShowcase MACOSX_BUNDLE examples/showcase.c)
+        target_sources(SrvrUIShowcase PRIVATE assets/fonts/LICENSE-DejaVu.txt assets/licenses/LICENSE-SDL.txt)
+        set_source_files_properties(assets/fonts/LICENSE-DejaVu.txt assets/licenses/LICENSE-SDL.txt
+            PROPERTIES MACOSX_PACKAGE_LOCATION Resources/Licenses)
         target_link_libraries(SrvrUIShowcase PRIVATE srvrui_sdl3)
         set_target_properties(SrvrUIShowcase PROPERTIES
             MACOSX_BUNDLE_GUI_IDENTIFIER "dev.srvros.srvrui-showcase"
@@ -65,6 +68,9 @@ configure_package_config_file(cmake/SrvrUIConfig.cmake.in ${CMAKE_CURRENT_BINARY
 install(EXPORT SrvrUITargets NAMESPACE SrvrUI:: DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/SrvrUI)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/SrvrUIConfig.cmake DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/SrvrUI)
 install(FILES assets/fonts/LICENSE-DejaVu.txt DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/SrvrUI)
+if(SRVRUI_BUILD_SDL3)
+    install(FILES assets/licenses/LICENSE-SDL.txt DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/SrvrUI)
+endif()
 
 include(CTest)
 if(BUILD_TESTING)
