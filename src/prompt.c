@@ -20,11 +20,18 @@ void desk_prompt_configure(struct desk_prompt *p,struct desk_rect bounds) {
     if(bounds.w<0 || bounds.h<0 || bounds.w>16384 || bounds.h>16384 || bounds.x<0 || bounds.y<0 || bounds.x>16384 || bounds.y>16384) return;
     int w=bounds.w>32?bounds.w-32:bounds.w;if(w>480) w=480;
     int h=bounds.h>32?bounds.h-32:bounds.h;if(h>256) h=256;
-    struct desk_rect r={bounds.x+(bounds.w-w)/2,bounds.y+(bounds.h-h)/2,w,h};p->dialog.frame=r;
+    struct desk_rect r={bounds.x+(bounds.w-w)/2,bounds.y+(bounds.h-h)/2,w,h};
+    int changed=memcmp(&p->dialog.frame,&r,sizeof(r))!=0;p->dialog.frame=r;
     int bw=w>48?(w-48)/2:0;if(bw>112) bw=112;
-    for(int i=0;i<2;i++) desk_button_configure(&p->dialog.buttons[i],desk_intersect(r,(struct desk_rect){r.x+w-16-(2-i)*bw-(1-i)*8,r.y+h-48,bw,32}),1);
+    for(int i=0;i<2;i++) {
+        struct desk_rect old=p->dialog.buttons[i].frame;int enabled=p->dialog.buttons[i].enabled;
+        desk_button_configure(&p->dialog.buttons[i],desk_intersect(r,(struct desk_rect){r.x+w-16-(2-i)*bw-(1-i)*8,r.y+h-48,bw,32}),1);
+        changed|=enabled!=p->dialog.buttons[i].enabled || memcmp(&old,&p->dialog.buttons[i].frame,sizeof(old))!=0;
+    }
+    struct desk_rect old=p->edit.frame;int enabled=p->edit.enabled;
     desk_edit_configure(&p->edit,desk_intersect(r,(struct desk_rect){r.x+16,r.y+h-100,w>32?w-32:0,34}),&desk_font_16,1);
-    desk_ui_layout_changed(&p->dialog.ui);
+    changed|=enabled!=p->edit.enabled || memcmp(&old,&p->edit.frame,sizeof(old))!=0;
+    if(changed) desk_ui_layout_changed(&p->dialog.ui);
 }
 unsigned desk_prompt_focus(struct desk_prompt *p,int active) { return desk_dialog_focus(&p->dialog,active); }
 struct desk_action desk_prompt_key(struct desk_prompt *p,const struct srv_key_event *key) {
