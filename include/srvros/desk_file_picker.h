@@ -3,7 +3,7 @@
 #include <srvros/desk_ui.h>
 #define DESK_PICKER_PATH 160
 #define DESK_PICKER_NAME 96
-enum desk_picker_mode { DESK_PICKER_OPEN=1,DESK_PICKER_SAVE };
+enum desk_picker_mode { DESK_PICKER_OPEN=1,DESK_PICKER_SAVE,DESK_PICKER_FOLDER };
 enum desk_picker_operation { DESK_PICKER_NONE,DESK_PICKER_BROWSE,DESK_PICKER_ACCEPT,DESK_PICKER_CANCEL };
 enum desk_picker_control { DESK_PICKER_UP=1,DESK_PICKER_REFRESH,DESK_PICKER_OK,DESK_PICKER_DISMISS,
     DESK_PICKER_LOCATION,DESK_PICKER_FILENAME,DESK_PICKER_LIST };
@@ -13,7 +13,9 @@ struct desk_picker_result { enum desk_picker_operation operation; unsigned flags
  * The app calls loading before asynchronous I/O, then listing or error.
  * Cancel remains available during I/O; the caller drains/discards its worker
  * response. Filename validation is lexical; existence/overwrite checks belong
- * to the application. Clipboard flags identify the relevant editor field. */
+ * to the application. Folder mode accepts the current successfully listed
+ * directory; its initial name must be empty. Clipboard flags identify the
+ * relevant editor field. */
 struct desk_file_picker {
     struct desk_ui ui;
     struct desk_button buttons[4];
@@ -24,7 +26,7 @@ struct desk_file_picker {
     struct desk_rect frame;
     char directory[DESK_PICKER_PATH],target[DESK_PICKER_PATH],status[160];
     enum desk_picker_mode mode;
-    int busy;
+    int busy,listed;
 };
 void desk_picker_init(struct desk_file_picker *picker);
 int desk_picker_open(struct desk_file_picker *picker,enum desk_picker_mode mode,const char *directory,const char *name);
