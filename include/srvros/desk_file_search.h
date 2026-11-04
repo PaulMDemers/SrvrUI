@@ -6,11 +6,18 @@
  * do no I/O. Paths are canonical absolute paths without dot components. */
 int desk_file_search_path_valid(const char *path);
 int desk_file_search_query_valid(const char *query);
+int desk_file_search_query_valid_mode(const char *query,unsigned mode);
+/* Search a bounded byte buffer with literal ASCII-only case folding. */
+int desk_file_search_text_matches(const void *bytes,size_t length,const char *query);
 int desk_file_search_under(const char *path,const char *root);
 int desk_file_search_matches(const char *path,const char *query);
 /* Validate the complete worker snapshot before changing caller storage. Entries
  * must be unique paths under root, match query/kind, and carry valid metadata.
  * kind: 0 all, 1 files, 2 folders. */
+/* Contents replies use version 2 and require kind 1; they cannot prove the
+ * match without I/O. A scan-limit flag records reaching the scan cap. */
+int desk_file_search_decode_mode(struct desk_search_header *header,struct desk_search_entry *entries,
+    const void *data,size_t length,const char *root,const char *query,unsigned kind,unsigned mode);
 int desk_file_search_decode(struct desk_search_header *header,struct desk_search_entry *entries,
     const void *data,size_t length,const char *root,const char *query,unsigned kind);
 #endif
