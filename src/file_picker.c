@@ -19,11 +19,13 @@ static void layout(struct desk_file_picker *p) {
     int enabled=!p->busy && w>=240 && h>=180;
     desk_button_configure(&p->buttons[0],desk_intersect(r,(struct desk_rect){x+w-172,y+10,60,26}),enabled);
     desk_button_configure(&p->buttons[1],desk_intersect(r,(struct desk_rect){x+w-104,y+10,88,26}),enabled);
-    desk_button_configure(&p->buttons[2],desk_intersect(r,(struct desk_rect){x+w-100,y+h-36,84,28}),enabled);
-    desk_button_configure(&p->buttons[3],desk_intersect(r,(struct desk_rect){x+w-192,y+h-36,84,28}),1);
+    int folder=p->mode==DESK_PICKER_FOLDER;
+    int ok_width=folder?128:84;
+    desk_button_configure(&p->buttons[2],desk_intersect(r,(struct desk_rect){x+w-ok_width-16,y+h-36,ok_width,28}),enabled && (!folder || p->listed));
+    desk_button_configure(&p->buttons[3],desk_intersect(r,(struct desk_rect){x+w-ok_width-108,y+h-36,84,28}),1);
     desk_edit_configure(&p->location,desk_intersect(r,(struct desk_rect){x+16,y+40,w>32?w-32:0,30}),&desk_font_16,enabled);
-    desk_list_configure(&p->list,desk_intersect(r,(struct desk_rect){x+16,y+78,w>32?w-32:0,h>184?h-184:0}),enabled);
-    desk_edit_configure(&p->name,desk_intersect(r,(struct desk_rect){x+64,y+h-74,w>80?w-80:0,30}),&desk_font_16,enabled);
+    desk_list_configure(&p->list,desk_intersect(r,(struct desk_rect){x+16,y+78,w>32?w-32:0,h>(folder?156:184)?h-(folder?156:184):0}),enabled);
+    desk_edit_configure(&p->name,desk_intersect(r,(struct desk_rect){x+64,y+h-74,w>80?w-80:0,30}),&desk_font_16,enabled && !folder);
     desk_ui_layout_changed(&p->ui);
 }
 void desk_picker_init(struct desk_file_picker *p) {
@@ -33,8 +35,8 @@ void desk_picker_init(struct desk_file_picker *p) {
     desk_edit_init(&p->location,&p->location_text,0);desk_edit_init(&p->name,&p->name_text,0);
 }
 int desk_picker_open(struct desk_file_picker *p,enum desk_picker_mode mode,const char *directory,const char *name) {
-    if((mode!=DESK_PICKER_OPEN && mode!=DESK_PICKER_SAVE) || !directory_valid(directory) ||
-        !valid(name,DESK_PICKER_NAME) || (name[0] && !name_valid(name))) return -1;
+    if((mode!=DESK_PICKER_OPEN && mode!=DESK_PICKER_SAVE && mode!=DESK_PICKER_FOLDER) || !directory_valid(directory) ||
+        !valid(name,DESK_PICKER_NAME) || (mode==DESK_PICKER_FOLDER && name[0]) || (name[0] && !name_valid(name))) return -1;
     char folder[DESK_PICKER_PATH],filename[DESK_PICKER_NAME];directory_copy(folder,directory);strcpy(filename,name);
     struct desk_rect frame=p->frame;desk_picker_init(p);p->frame=frame;p->mode=mode;
     strcpy(p->directory,folder);strcpy(p->target,folder);
@@ -43,10 +45,10 @@ int desk_picker_open(struct desk_file_picker *p,enum desk_picker_mode mode,const
     desk_ui_add(&p->ui,DESK_PICKER_REFRESH,DESK_CONTROL_BUTTON,&p->buttons[1],"Refresh");
     desk_ui_add(&p->ui,DESK_PICKER_LOCATION,DESK_CONTROL_EDIT,&p->location,NULL);
     desk_ui_add(&p->ui,DESK_PICKER_LIST,DESK_CONTROL_LIST,&p->list,NULL);
-    desk_ui_add(&p->ui,DESK_PICKER_FILENAME,DESK_CONTROL_EDIT,&p->name,NULL);
+    if(mode!=DESK_PICKER_FOLDER) desk_ui_add(&p->ui,DESK_PICKER_FILENAME,DESK_CONTROL_EDIT,&p->name,NULL);
     desk_ui_add(&p->ui,DESK_PICKER_DISMISS,DESK_CONTROL_BUTTON,&p->buttons[3],"Cancel");
-    desk_ui_add(&p->ui,DESK_PICKER_OK,DESK_CONTROL_BUTTON,&p->buttons[2],mode==DESK_PICKER_SAVE?"Save":"Open");
-    strcpy(p->status,mode==DESK_PICKER_SAVE?"Choose a folder and a filename.":"Choose a file to open.");layout(p);
+    desk_ui_add(&p->ui,DESK_PICKER_OK,DESK_CONTROL_BUTTON,&p->buttons[2],mode==DESK_PICKER_SAVE?"Save":mode==DESK_PICKER_FOLDER?"Choose folder":"Open");
+    strcpy(p->status,mode==DESK_PICKER_SAVE?"Choose a folder and a filename.":mode==DESK_PICKER_FOLDER?"Choose a folder.":"Choose a file to open.");layout(p);
     desk_ui_focus(&p->ui,mode==DESK_PICKER_SAVE?DESK_PICKER_FILENAME:DESK_PICKER_LIST);return 0;
 }
 void desk_picker_configure(struct desk_file_picker *p,struct desk_rect bounds) {
@@ -60,9 +62,11 @@ int desk_picker_listing(struct desk_file_picker *p,const char *directory,const s
     if(!directory_valid(directory) || count<0 || count>DESK_LIST_MAX_ITEMS || (count && !items)) return -1;
     for(int i=0;i<count;i++) if(!name_valid(items[i].label) || (items[i].folder!=0 && items[i].folder!=1)) return -1;
     directory_copy(p->directory,directory);desk_text_buffer_set(&p->location_text,p->directory,strlen(p->directory));
-    desk_list_set_items(&p->list,items,count);p->busy=0;
+    desk_list_set_items(&p->list,items,count);p->busy=0;p->listed=1;
     if(p->mode==DESK_PICKER_OPEN) desk_text_buffer_set(&p->name_text,"",0);
-    strcpy(p->status,count?"Double-click a folder to browse it.":"This folder is empty.");layout(p);
+    strcpy(p->status,p->mode==DESK_PICKER_FOLDER
+        ? (count?"Open a folder to browse, or choose the displayed folder.":"No subfolders. You can choose this folder.")
+        : (count?"Double-click a folder to browse it.":"This folder is empty."));layout(p);
     desk_ui_focus(&p->ui,p->mode==DESK_PICKER_SAVE?DESK_PICKER_FILENAME:DESK_PICKER_LIST);
     if(p->mode==DESK_PICKER_SAVE) desk_text_buffer_select(&p->name_text,0,p->name_text.length);
     return 0;
@@ -71,7 +75,8 @@ void desk_picker_message(struct desk_file_picker *p,const char *message) {
     if(valid(message,sizeof(p->status))) strcpy(p->status,message);
 }
 void desk_picker_error(struct desk_file_picker *p,const char *message) {
-    p->busy=0;desk_text_buffer_set(&p->location_text,p->directory,strlen(p->directory));
+    p->busy=0;if(p->mode==DESK_PICKER_FOLDER) p->listed=0;
+    desk_text_buffer_set(&p->location_text,p->directory,strlen(p->directory));
     if(valid(message,sizeof(p->status))) strcpy(p->status,message);else strcpy(p->status,"This folder could not be opened.");layout(p);
 }
 unsigned desk_picker_focus(struct desk_file_picker *p,int active) { return desk_ui_window_focus(&p->ui,active); }
@@ -83,6 +88,11 @@ static struct desk_picker_result browse(struct desk_file_picker *p,const char *d
     directory_copy(p->target,directory);return (struct desk_picker_result){DESK_PICKER_BROWSE,DESK_WIDGET_REDRAW,0};
 }
 static struct desk_picker_result accept(struct desk_file_picker *p) {
+    if(p->mode==DESK_PICKER_FOLDER) {
+        if(!p->listed) return (struct desk_picker_result){0};
+        strcpy(p->target,p->directory);
+        return (struct desk_picker_result){DESK_PICKER_ACCEPT,DESK_WIDGET_REDRAW,0};
+    }
     if(join(p,p->name_text.data)) { strcpy(p->status,"Choose a filename without a slash, within the path limit.");return (struct desk_picker_result){.flags=DESK_WIDGET_REDRAW}; }
     int selected=p->list.selected;
     if(p->mode==DESK_PICKER_OPEN && selected>=0 && p->list.items[selected].folder && !strcmp(p->list.items[selected].label,p->name_text.data))
@@ -95,8 +105,8 @@ static struct desk_picker_result action(struct desk_file_picker *p,struct desk_a
     if(p->busy) return result;
     if(a.id==DESK_PICKER_LIST && (a.flags&(DESK_WIDGET_CHANGED|DESK_WIDGET_ACTIVATED)) && p->list.selected>=0) {
         const struct desk_list_item *item=&p->list.items[p->list.selected];
-        if(!item->folder || p->mode==DESK_PICKER_OPEN) desk_text_buffer_set(&p->name_text,item->label,strlen(item->label));
-        if(a.flags&DESK_WIDGET_ACTIVATED) {
+        if(p->mode!=DESK_PICKER_FOLDER && (!item->folder || p->mode==DESK_PICKER_OPEN)) desk_text_buffer_set(&p->name_text,item->label,strlen(item->label));
+        if((a.flags&DESK_WIDGET_ACTIVATED) && (p->mode!=DESK_PICKER_FOLDER || item->folder)) {
             if(join(p,item->label)) { strcpy(p->status,"This path is too long.");return result; }
             result.operation=item->folder?DESK_PICKER_BROWSE:DESK_PICKER_ACCEPT;
         }
@@ -135,9 +145,9 @@ void desk_picker_draw(struct desk_canvas *c,const struct desk_file_picker *p,con
     struct desk_rect r=p->frame,clip=c->clip;
     desk_fill(c,(struct desk_rect){r.x+3,r.y+4,r.w,r.h},desk_theme_shadow(t));desk_theme_panel(c,r,t,0,0);
     desk_fill(c,desk_widget_inset(r,2),t->surface);desk_clip(c,desk_intersect(clip,r));
-    desk_label_draw(c,(struct desk_rect){r.x+16,r.y+10,r.w>200?r.w-200:0,28},t->heading,p->mode==DESK_PICKER_SAVE?(r.w<400?"Save":"Save document"):(r.w<400?"Open":"Open document"),t->text);
+    desk_label_draw(c,(struct desk_rect){r.x+16,r.y+10,r.w>200?r.w-200:0,28},t->heading,p->mode==DESK_PICKER_FOLDER?"Choose folder":p->mode==DESK_PICKER_SAVE?(r.w<400?"Save":"Save document"):(r.w<400?"Open":"Open document"),t->text);
     desk_ui_draw(c,&p->ui,t);
-    desk_label_draw(c,(struct desk_rect){r.x+16,r.y+r.h-100,r.w>32?r.w-32:0,22},t->body,p->status,t->muted);
-    desk_label_draw(c,(struct desk_rect){r.x+16,r.y+r.h-68,48,24},t->body,"Name",t->text);
+    desk_label_draw(c,(struct desk_rect){r.x+16,r.y+r.h-(p->mode==DESK_PICKER_FOLDER?72:100),r.w>32?r.w-32:0,22},t->body,p->status,t->muted);
+    if(p->mode!=DESK_PICKER_FOLDER) desk_label_draw(c,(struct desk_rect){r.x+16,r.y+r.h-68,48,24},t->body,"Name",t->text);
     c->clip=clip;
 }
