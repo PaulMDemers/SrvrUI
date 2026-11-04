@@ -2,6 +2,8 @@
 #define SRVROS_DESK_LISTING_H
 #include <srvros/desktop_file.h>
 #include <srvros/desk_list.h>
+/* Produce distinct presentation keys without changing filesystem identities. */
+int desk_listing_row_ids(const struct desk_file_entry *entries,unsigned count,uint64_t *ids);
 /* Validate a worker snapshot before changing caller storage, then sort folders
  * first. Result items borrow entries/details until the next successful decode.
  * No I/O or allocation; all destination arrays have DESK_FILE_ENTRIES capacity. */
